@@ -588,22 +588,26 @@ function copyField(fi) {
 }
 
 // --- 拖拽 ---
+let _dragMetricId = null;
 function onMetricDragStart(e) {
   const el = e.target.closest('[data-metric-id]');
   if (el) {
-    e.dataTransfer.setData('text/plain', el.dataset.metricId);
+    _dragMetricId = el.dataset.metricId;
+    e.dataTransfer.setData('text/plain', _dragMetricId);
     e.dataTransfer.effectAllowed = 'copy';
     el.style.opacity = '0.5';
     setTimeout(() => { if (el) el.style.opacity = '1'; }, 0);
   }
 }
-function onFieldZoneDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+function onFieldZoneDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; e.currentTarget.classList.add('drag-over'); }
 function onFieldZoneDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
 function onFieldZoneDrop(e, fi, zone) {
-  e.preventDefault(); e.currentTarget.classList.remove('drag-over');
-  const data = e.dataTransfer.getData('text/plain');
-  if (!data || data.startsWith('reorder-')) return;
-  const metricId = data;
+  e.preventDefault(); e.stopPropagation();
+  const el = e.currentTarget;
+  el.classList.remove('drag-over');
+  const metricId = _dragMetricId || e.dataTransfer.getData('text/plain');
+  _dragMetricId = null;
+  if (!metricId || metricId.startsWith('reorder-')) return;
   const metric = MetricStore.getById(metricId);
   if (!metric) return;
   const field = canvasFields[fi];
