@@ -4,9 +4,28 @@
   "category": "non_llm",
   "description": "检查 retrieval_context 总 token 数是否超标",
   "params": [
-    {"key": "max_tokens", "label": "最大 Token 数", "type": "number", "default": 2000, "min": 100, "max": 100000, "step": 100},
-    {"key": "threshold", "label": "通过阈值", "type": "number", "default": 1.0, "min": 0, "max": 1, "step": 0.1}
+    {
+      "key": "max_tokens",
+      "label": "最大 Token 数",
+      "type": "number",
+      "default": 2000,
+      "min": 100,
+      "max": 100000,
+      "step": 100
+    },
+    {
+      "key": "threshold",
+      "label": "通过阈值",
+      "type": "number",
+      "default": 1.0,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    }
   ],
   "criteria": null,
-  "code_template": "class ContextLengthMetric(BaseMetric):\n    def __init__(self, max_tokens: int = {{max_tokens}}, threshold: float = {{threshold}}):\n        self.threshold = threshold\n        self.max_tokens = max_tokens\n        self.evaluation_model = \"token-counter\"\n\n    def _count_tokens(self, text: str) -> int:\n        return len(text) // 2\n\n    def measure(self, test_case: LLMTestCase, *args, **kwargs) -> float:\n        contexts = test_case.retrieval_context or []\n        total_tokens = sum(self._count_tokens(c) for c in contexts)\n        if total_tokens > self.max_tokens:\n            self.score = 0.0\n            self.reason = f\"检索上下文共 {total_tokens} tokens，超过上限 {self.max_tokens}\"\n        else:\n            self.score = 1.0\n            self.reason = f\"检索上下文共 {total_tokens} tokens，未超上限 {self.max_tokens}\"\n        self.success = self.score >= self.threshold\n        return self.score\n\n    async def a_measure(self, test_case: LLMTestCase, *args, **kwargs) -> float:\n        return self.measure(test_case)\n\n    def is_successful(self) -> bool:\n        return bool(self.score and self.score >= self.threshold)\n\n    @property\n    def __name__(self):\n        return \"Context Length Check\""
+  "code_template": "class ContextLengthMetric(BaseMetric):\n    def __init__(self, max_tokens: int = {{max_tokens}}, threshold: float = {{threshold}}):\n        self.threshold = threshold\n        self.max_tokens = max_tokens\n        self.evaluation_model = \"token-counter\"\n\n    def _count_tokens(self, text: str) -> int:\n        return len(text) // 2\n\n    def measure(self, test_case: LLMTestCase, *args, **kwargs) -> float:\n        contexts = test_case.retrieval_context or []\n        total_tokens = sum(self._count_tokens(c) for c in contexts)\n        if total_tokens > self.max_tokens:\n            self.score = 0.0\n            self.reason = f\"检索上下文共 {total_tokens} tokens，超过上限 {self.max_tokens}\"\n        else:\n            self.score = 1.0\n            self.reason = f\"检索上下文共 {total_tokens} tokens，未超上限 {self.max_tokens}\"\n        self.success = self.score >= self.threshold\n        return self.score\n\n    async def a_measure(self, test_case: LLMTestCase, *args, **kwargs) -> float:\n        return self.measure(test_case)\n\n    def is_successful(self) -> bool:\n        return bool(self.score and self.score >= self.threshold)\n\n    @property\n    def __name__(self):\n        return \"Context Length Check\"",
+  "requires": [
+    "retrieval_context"
+  ]
 }

@@ -88,8 +88,8 @@ label { font-size: 12px; color: var(--text-secondary); display: block; margin-bo
 // ============================================================
 // Canvas 状态
 // ============================================================
-let canvasGatePipeline = [];   // [{ metricId, params, order }]
-let canvasScorePipeline = [];  // [{ metricId, params, weight, strictness, order }]
+// canvasFields: [{ name: "字段名", gatePipeline: [...], scorePipeline: [...] }]
+let canvasFields = [];
 let canvasGlobal = {
   modelBaseUrl: 'https://your-model-gateway.example.com/v1',
   modelId: '',
@@ -146,19 +146,18 @@ function saveCanvasConfig() {
   canvasGlobal.modelBaseUrl = document.getElementById('cfg-base-url')?.value || canvasGlobal.modelBaseUrl;
   canvasGlobal.modelId = document.getElementById('cfg-model-id')?.value || canvasGlobal.modelId;
   canvasGlobal.skillName = document.getElementById('cfg-skill-name')?.value || canvasGlobal.skillName;
-  canvasGlobal.judgeMode = document.getElementById('cfg-judge-mode')?.value || canvasGlobal.judgeMode;
-  canvasGlobal.agentCommand = document.getElementById('cfg-agent-cmd')?.value || canvasGlobal.agentCommand;
-  localStorage.setItem('deepeval_canvas_gate_pipeline', JSON.stringify(canvasGatePipeline));
-  localStorage.setItem('deepeval_canvas_score_pipeline', JSON.stringify(canvasScorePipeline));
+  localStorage.setItem('deepeval_canvas_fields', JSON.stringify(canvasFields));
   localStorage.setItem('deepeval_canvas_global', JSON.stringify(canvasGlobal));
 }
 
 function loadCanvasConfig() {
   try {
-    canvasGatePipeline = JSON.parse(localStorage.getItem('deepeval_canvas_gate_pipeline')) || [];
-    canvasScorePipeline = JSON.parse(localStorage.getItem('deepeval_canvas_score_pipeline')) || [];
+    canvasFields = JSON.parse(localStorage.getItem('deepeval_canvas_fields')) || [];
     canvasGlobal = JSON.parse(localStorage.getItem('deepeval_canvas_global')) || canvasGlobal;
   } catch { /* use defaults */ }
+  if (canvasFields.length === 0) {
+    canvasFields = [{ name: '', gatePipeline: [], scorePipeline: [] }];
+  }
 }
 
 // ============================================================
@@ -395,6 +394,10 @@ function renderCanvas() {
   const metrics = MetricStore.getAll();
   const savedSearch = document.getElementById('metric-search')?.value || '';
 
+  if (canvasFields.length === 0) {
+    canvasFields = [{ name: '', gatePipeline: [], scorePipeline: [] }];
+  }
+
   container.innerHTML = `
     <div style="display:flex; gap:20px; width:100%; height:100%;">
       <!-- 左侧 Metric 面板 -->
@@ -417,86 +420,33 @@ function renderCanvas() {
                   <span class="badge ${m.category === 'llm' ? 'badge-llm' : 'badge-non-llm'}">${m.category === 'llm' ? 'LLM' : '非LLM'}</span>
                 </div>
                 <p style="font-size:12px; color:var(--text-secondary); margin-top:4px;">${escapeHtml((m.description || '').substring(0, 50))}</p>
+                <p style="font-size:10px; color:var(--text-secondary); margin-top:2px;">需要: ${(m.requires || []).join(', ') || '无'}</p>
               </div>
             `).join('')}
         </div>
       </div>
 
       <!-- 中间 Canvas -->
-      <div style="flex:1; display:flex; flex-direction:column; gap:12px; overflow:auto;">
-        <!-- 门禁指标区 -->
-        <div style="display:flex; flex-direction:column;">
-          <h3 style="margin-bottom:8px;">🚪 门禁指标 <span style="font-size:12px; color:var(--text-secondary); font-weight:normal;">（顺序执行，不通过则停止）</span></h3>
-          <div id="gate-drop-zone"
-               ondragover="onZoneDragOver(event, 'gate')"
-               ondragleave="onZoneDragLeave(event, 'gate')"
-               ondrop="onZoneDrop(event, 'gate')"
-               style="border:2px dashed var(--border); border-radius:var(--radius);
-                      padding:16px; min-height:120px; background:var(--bg);
-                      display:flex; flex-direction:column; gap:8px;">
-            ${canvasGatePipeline.length === 0
-              ? '<div style="text-align:center; color:var(--text-secondary); padding:30px 0;">拖入门禁 Metric</div>'
-              : canvasGatePipeline.map((item, i) => renderGateItem(item, i)).join('')
-            }
-          </div>
+      <div style="flex:1; display:flex; flex-direction:column; gap:16px; overflow:auto;">
+        <!-- 字段区域 -->
+        <div id="fields-container" style="display:flex; flex-direction:column; gap:16px;">
+          ${canvasFields.map((field, fi) => renderFieldSection(field, fi)).join('')}
         </div>
+        <button class="btn btn-ghost" onclick="addField()" style="align-self:start;">+ 新建字段</button>
 
-        <!-- 打分指标区 -->
-        <div style="display:flex; flex-direction:column;">
-          <h3 style="margin-bottom:8px;">📊 打分指标 <span style="font-size:12px; color:var(--text-secondary); font-weight:normal;">（全部执行，加权平均）</span></h3>
-          <div id="score-drop-zone"
-               ondragover="onZoneDragOver(event, 'score')"
-               ondragleave="onZoneDragLeave(event, 'score')"
-               ondrop="onZoneDrop(event, 'score')"
-               style="border:2px dashed var(--border); border-radius:var(--radius);
-                      padding:16px; min-height:120px; background:var(--bg);
-                      display:flex; flex-direction:column; gap:8px;">
-            ${canvasScorePipeline.length === 0
-              ? '<div style="text-align:center; color:var(--text-secondary); padding:30px 0;">拖入打分 Metric</div>'
-              : canvasScorePipeline.map((item, i) => renderScoreItem(item, i)).join('')
-            }
-          </div>
-          ${canvasScorePipeline.length > 0 ? `
-            <div style="margin-top:8px; padding:8px 12px; background:var(--primary-light); border-radius:var(--radius); font-size:13px; color:var(--primary);">
-              加权总分 = ${canvasScorePipeline.map((item, i) => {
-                const m = MetricStore.getById(item.metricId);
-                return `<strong>${(item.weight || 0.3).toFixed(2)} × ${m ? m.name : '?'}</strong>`;
-              }).join(' + ')}
-            </div>
-          ` : ''}
-        </div>
-
-        <!-- 全局配置 -->
+        <!-- 全局配置（精简版，无评委模式） -->
         <div class="card">
           <h4>全局配置</h4>
           <div style="display:flex; gap:12px; align-items:end; flex-wrap:wrap;">
             <div>
-              <label style="font-size:12px;">评委模式</label>
-              <select id="cfg-judge-mode" onchange="saveCanvasConfig()" style="padding:6px; border:1px solid var(--border); border-radius:4px; font-size:13px;">
-                <option value="api" ${canvasGlobal.judgeMode === 'api' ? 'selected' : ''}>API 调用</option>
-                <option value="local_agent" ${canvasGlobal.judgeMode === 'local_agent' ? 'selected' : ''}>本地 Agent</option>
-              </select>
+              <label style="font-size:12px;">模型 API 地址</label>
+              <input id="cfg-base-url" value="${escapeHtml(canvasGlobal.modelBaseUrl)}" onchange="saveCanvasConfig()"
+                style="width:230px; padding:6px; border:1px solid var(--border); border-radius:4px;">
             </div>
-            <div id="cfg-api-fields" ${canvasGlobal.judgeMode === 'local_agent' ? 'style="display:none;"' : ''}>
-              <div style="display:flex; gap:12px; flex-wrap:wrap;">
-                <div>
-                  <label style="font-size:12px;">模型 API 地址</label>
-                  <input id="cfg-base-url" value="${escapeHtml(canvasGlobal.modelBaseUrl)}" onchange="saveCanvasConfig()"
-                    style="width:230px; padding:6px; border:1px solid var(--border); border-radius:4px;">
-                </div>
-                <div>
-                  <label style="font-size:12px;">模型 ID</label>
-                  <input id="cfg-model-id" value="${escapeHtml(canvasGlobal.modelId)}" onchange="saveCanvasConfig()" placeholder="如: your-model-id"
-                    style="width:170px; padding:6px; border:1px solid var(--border); border-radius:4px;">
-                </div>
-              </div>
-            </div>
-            <div id="cfg-agent-fields" ${canvasGlobal.judgeMode !== 'local_agent' ? 'style="display:none;"' : ''}>
-              <div>
-                <label style="font-size:12px;">Agent CLI 命令</label>
-                <input id="cfg-agent-cmd" value="${escapeHtml(canvasGlobal.agentCommand)}" onchange="saveCanvasConfig()" placeholder="claude / codex / claude-code"
-                  style="width:180px; padding:6px; border:1px solid var(--border); border-radius:4px;">
-              </div>
+            <div>
+              <label style="font-size:12px;">模型 ID</label>
+              <input id="cfg-model-id" value="${escapeHtml(canvasGlobal.modelId)}" onchange="saveCanvasConfig()" placeholder="如: your-model-id"
+                style="width:170px; padding:6px; border:1px solid var(--border); border-radius:4px;">
             </div>
             <div>
               <label style="font-size:12px;">Skill 名称</label>
@@ -505,10 +455,6 @@ function renderCanvas() {
             </div>
             <button class="btn btn-primary" onclick="saveCanvasConfig()">💾 保存</button>
           </div>
-          <p style="font-size:11px; color:var(--text-secondary); margin-top:8px;">
-            <span id="cfg-hint-api" ${canvasGlobal.judgeMode === 'local_agent' ? 'style="display:none;"' : ''}>API 模式：所有 LLM metric 统一使用上方配置的模型作为评委</span>
-            <span id="cfg-hint-agent" ${canvasGlobal.judgeMode !== 'local_agent' ? 'style="display:none;"' : ''}>本地 Agent 模式：LLM metric 通过本地 agent 作为评委，无需 API Key</span>
-          </p>
         </div>
       </div>
 
@@ -516,23 +462,6 @@ function renderCanvas() {
       <div id="param-panel" style="width:300px; flex-shrink:0; display:none;"></div>
     </div>
   `;
-
-  // 监听评委模式切换
-  document.getElementById('cfg-judge-mode').addEventListener('change', (e) => {
-    canvasGlobal.judgeMode = e.target.value;
-    const apiFields = document.getElementById('cfg-api-fields');
-    const agentFields = document.getElementById('cfg-agent-fields');
-    const hintApi = document.getElementById('cfg-hint-api');
-    const hintAgent = document.getElementById('cfg-hint-agent');
-    if (e.target.value === 'local_agent') {
-      apiFields.style.display = 'none'; agentFields.style.display = 'block';
-      hintApi.style.display = 'none'; hintAgent.style.display = 'inline';
-    } else {
-      apiFields.style.display = 'block'; agentFields.style.display = 'none';
-      hintApi.style.display = 'inline'; hintAgent.style.display = 'none';
-    }
-    saveCanvasConfig();
-  });
 
   if (savedSearch) {
     setTimeout(() => {
@@ -542,230 +471,236 @@ function renderCanvas() {
   }
 }
 
+// --- 字段 section 渲染 ---
+function renderFieldSection(field, fi) {
+  const gateItems = field.gatePipeline || [];
+  const scoreItems = field.scorePipeline || [];
+  return `
+    <div class="card" style="border-left:3px solid var(--primary);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <strong style="font-size:15px;">📌 字段</strong>
+          <input value="${escapeHtml(field.name || '')}"
+            onchange="renameField(${fi}, this.value)" placeholder="字段名（如: diagnosis）"
+            style="padding:4px 8px; border:1px solid var(--border); border-radius:4px; font-size:13px; width:200px;">
+        </div>
+        <div style="display:flex; gap:4px;">
+          <button class="btn btn-ghost" style="padding:2px 8px; font-size:11px;" onclick="copyField(${fi})" title="复制此字段的指标配置">📋 复制</button>
+          <button class="btn btn-danger" style="padding:2px 8px; font-size:11px;" onclick="deleteField(${fi})">🗑️</button>
+        </div>
+      </div>
+
+      <!-- 门禁子区 -->
+      <div style="margin-bottom:8px;">
+        <div style="font-size:12px; color:var(--danger); margin-bottom:4px;">🚪 门禁（不通过则停止）</div>
+        <div class="field-gate-zone" data-field-index="${fi}"
+             ondragover="onFieldZoneDragOver(event)"
+             ondragleave="onFieldZoneDragLeave(event)"
+             ondrop="onFieldZoneDrop(event, ${fi}, 'gate')"
+             style="border:1px dashed #fca5a5; border-radius:var(--radius);
+                    padding:8px; min-height:44px; background:#fef2f2;
+                    display:flex; flex-direction:column; gap:4px;">
+          ${gateItems.length === 0
+            ? '<div style="text-align:center; color:#f87171; font-size:12px; padding:8px 0;">拖入门禁 Metric</div>'
+            : gateItems.map((item, i) => renderPipelineCard(item, i, fi, 'gate')).join('')
+          }
+        </div>
+      </div>
+
+      <!-- 打分子区 -->
+      <div>
+        <div style="font-size:12px; color:var(--success); margin-bottom:4px;">📊 打分（加权平均）</div>
+        <div class="field-score-zone" data-field-index="${fi}"
+             ondragover="onFieldZoneDragOver(event)"
+             ondragleave="onFieldZoneDragLeave(event)"
+             ondrop="onFieldZoneDrop(event, ${fi}, 'score')"
+             style="border:1px dashed #86efac; border-radius:var(--radius);
+                    padding:8px; min-height:44px; background:#f0fdf4;
+                    display:flex; flex-direction:column; gap:4px;">
+          ${scoreItems.length === 0
+            ? '<div style="text-align:center; color:#4ade80; font-size:12px; padding:8px 0;">拖入打分 Metric</div>'
+            : scoreItems.map((item, i) => renderPipelineCard(item, i, fi, 'score')).join('')
+          }
+        </div>
+        ${scoreItems.length > 0 ? `
+          <div style="margin-top:4px; padding:4px 8px; background:var(--primary-light); border-radius:4px; font-size:11px; color:var(--primary);">
+            加权 = ${scoreItems.map((it, i) => {
+              const m = MetricStore.getById(it.metricId);
+              return `<strong>${(it.weight||0.3).toFixed(2)}×${m?m.name:'?'}</strong>`;
+            }).join(' + ')}
+          </div>` : ''}
+      </div>
+    </div>`;
+}
+
+function renderPipelineCard(item, idx, fieldIdx, zone) {
+  const metric = MetricStore.getById(item.metricId);
+  if (!metric) return '';
+  return `
+    <div class="pipeline-item" draggable="true"
+         style="display:flex; justify-content:space-between; align-items:center; padding:6px 10px;
+                background:var(--card-bg); border-radius:4px; cursor:grab; border:1px solid var(--border);"
+         data-field-idx="${fieldIdx}" data-zone="${zone}" data-idx="${idx}"
+         ondragstart="onPipelineCardDragStart(event)"
+         ondragover="onPipelineCardDragOver(event)"
+         ondrop="onPipelineCardDrop(event, ${fieldIdx}, '${zone}')">
+      <div style="display:flex; align-items:center; gap:6px; font-size:13px;">
+        <span style="color:${zone==='gate'?'var(--danger)':'var(--success)'}; font-size:11px;">${idx+1}.</span>
+        <strong>${escapeHtml(metric.name)}</strong>
+        ${zone === 'gate'
+          ? `<span style="font-size:11px; color:var(--text-secondary);">阈值:${item.params?.threshold||0.7}</span>`
+          : `<span style="font-size:11px; color:var(--text-secondary);">w:${(item.weight||0.3).toFixed(2)} s:${(item.strictness||1.0).toFixed(1)}</span>`
+        }
+      </div>
+      <div style="display:flex; gap:2px;">
+        <button class="btn btn-ghost" style="padding:1px 4px; font-size:10px;" onclick="event.stopPropagation(); editFieldItemParams(${fieldIdx}, '${zone}', ${idx})">⚙️</button>
+        <button class="btn btn-danger" style="padding:1px 4px; font-size:10px;" onclick="event.stopPropagation(); removeFieldItem(${fieldIdx}, '${zone}', ${idx})">✕</button>
+      </div>
+    </div>`;
+}
+
+// --- 字段管理 ---
+function addField() {
+  canvasFields.push({ name: '', gatePipeline: [], scorePipeline: [] });
+  saveCanvasConfig();
+  renderCanvas();
+}
+function renameField(fi, name) { canvasFields[fi].name = name; saveCanvasConfig(); }
+function deleteField(fi) {
+  if (canvasFields.length <= 1) { alert('至少保留一个字段'); return; }
+  canvasFields.splice(fi, 1);
+  saveCanvasConfig(); renderCanvas();
+}
+function copyField(fi) {
+  const src = canvasFields[fi];
+  const clone = JSON.parse(JSON.stringify(src));
+  clone.name = src.name ? src.name + '_copy' : '';
+  canvasFields.splice(fi + 1, 0, clone);
+  saveCanvasConfig(); renderCanvas();
+}
+
+// --- 拖拽 ---
+function onMetricDragStart(e) {
+  const id = e.target.closest('[data-metric-id]')?.dataset.metricId;
+  if (id) { e.dataTransfer.setData('text/plain', id); e.dataTransfer.effectAllowed = 'copy'; }
+}
+function onFieldZoneDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+function onFieldZoneDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+function onFieldZoneDrop(e, fi, zone) {
+  e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+  const data = e.dataTransfer.getData('text/plain');
+  if (!data || data.startsWith('reorder-')) return;
+  const metricId = data;
+  const metric = MetricStore.getById(metricId);
+  if (!metric) return;
+  const field = canvasFields[fi];
+  const pipeline = zone === 'gate' ? field.gatePipeline : field.scorePipeline;
+  if (pipeline.some(it => it.metricId === metricId)) return;
+  const defaultParams = {}; (metric.params||[]).forEach(p => { defaultParams[p.key] = p.default; });
+  const newItem = { metricId, params: defaultParams, order: pipeline.length };
+  if (zone === 'score') { newItem.weight = 0.3; newItem.strictness = 1.0; }
+  pipeline.push(newItem);
+  saveCanvasConfig(); renderCanvas();
+}
+function onPipelineCardDragStart(e) {
+  e.stopPropagation();
+  const el = e.target.closest('[data-field-idx]');
+  if (!el) return;
+  e.dataTransfer.setData('text/plain', `reorder-${el.dataset.fieldIdx}-${el.dataset.zone}-${el.dataset.idx}`);
+  e.dataTransfer.effectAllowed = 'move';
+}
+function onPipelineCardDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
+function onPipelineCardDrop(e, fi, zone) {
+  e.preventDefault(); e.stopPropagation();
+  const data = e.dataTransfer.getData('text/plain');
+  if (!data || !data.startsWith('reorder-')) return;
+  const parts = data.replace('reorder-', '').split('-');
+  const fromFi = parseInt(parts[0]), fromZone = parts[1], fromIdx = parseInt(parts[2]);
+  const toEl = e.target.closest('[data-idx]');
+  if (!toEl) return;
+  const toIdx = parseInt(toEl.dataset.idx);
+  if (fromFi !== fi || fromZone !== zone || fromIdx === toIdx) return;
+  const pipeline = zone === 'gate' ? canvasFields[fi].gatePipeline : canvasFields[fi].scorePipeline;
+  const [item] = pipeline.splice(fromIdx, 1);
+  pipeline.splice(toIdx, 0, item);
+  saveCanvasConfig(); renderCanvas();
+}
+function removeFieldItem(fi, zone, idx) {
+  const pipeline = zone === 'gate' ? canvasFields[fi].gatePipeline : canvasFields[fi].scorePipeline;
+  pipeline.splice(idx, 1);
+  saveCanvasConfig(); renderCanvas();
+}
+
+// --- 参数编辑（字段级）---
+function editFieldItemParams(fi, zone, idx) {
+  const pipeline = zone === 'gate' ? canvasFields[fi].gatePipeline : canvasFields[fi].scorePipeline;
+  const item = pipeline[idx];
+  const metric = MetricStore.getById(item.metricId);
+  if (!metric) return;
+
+  const panel = document.getElementById('param-panel');
+  panel.style.display = 'block';
+  const fid = `${fi}-${zone}-${idx}`;
+
+  const paramFields = (metric.params || []).map(p => {
+    const val = item.params[p.key] !== undefined ? item.params[p.key] : p.default;
+    return `<div><label style="font-size:12px;">${escapeHtml(p.label)}${p.required?' <span style="color:var(--danger);">*</span>':''}</label>${renderParamInput(p, val, fid)}</div>`;
+  }).join('');
+  const extraFields = zone === 'score' ? `
+    <div><label style="font-size:12px;">权重</label><input id="item-weight" type="number" value="${item.weight||0.3}" min="0.01" max="1" step="0.01" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;"></div>
+    <div><label style="font-size:12px;">严格度 (0.2=宽松, 5=严格)</label><input id="item-strictness" type="range" value="${item.strictness||1.0}" min="0.2" max="5" step="0.1" style="width:100%;" oninput="document.getElementById('sv').textContent=this.value"><span id="sv" style="font-size:12px;color:var(--text-secondary);">${item.strictness||1.0}</span></div>` : '';
+
+  panel.innerHTML = `<div class="card" style="position:sticky;top:20px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <h4>${escapeHtml(metric.name)} — ${zone==='gate'?'门禁':'打分'}参数</h4>
+      <button class="btn btn-ghost" style="padding:2px 8px;" onclick="document.getElementById('param-panel').style.display='none'">✕</button>
+    </div>
+    <form id="pipeline-param-form" style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">
+      ${paramFields||'<p style="color:var(--text-secondary);">此 metric 无参数</p>'}
+      ${extraFields}
+      <button type="submit" class="btn btn-primary">应用</button>
+    </form>
+  </div>`;
+
+  document.getElementById('pipeline-param-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    (metric.params||[]).forEach(p => {
+      const input = document.getElementById(`param-${fid}-${p.key}`);
+      if (input) {
+        let val = input.value;
+        if (p.type==='number') val=parseFloat(val)||0;
+        if (p.type==='boolean') val=input.checked;
+        if (p.type==='json') { try{val=JSON.parse(val)}catch{} }
+        item.params[p.key]=val;
+      }
+    });
+    if (zone==='score') {
+      item.weight = parseFloat(document.getElementById('item-weight')?.value)||0.3;
+      item.strictness = parseFloat(document.getElementById('item-strictness')?.value)||1.0;
+    }
+    panel.style.display='none'; saveCanvasConfig(); renderCanvas();
+  });
+}
+
 function filterMetricSidebar() {
   const query = (document.getElementById('metric-search')?.value || '').toLowerCase();
-  const cards = document.querySelectorAll('#metric-sidebar .metric-source');
-  cards.forEach(card => {
+  document.querySelectorAll('#metric-sidebar .metric-source').forEach(card => {
     const name = (card.dataset.metricName || '').toLowerCase();
     const desc = (card.dataset.metricDesc || '').toLowerCase();
     card.style.display = (!query || name.includes(query) || desc.includes(query)) ? '' : 'none';
   });
 }
 
-// --- 门禁卡片渲染 ---
-function renderGateItem(item, index) {
-  const metric = MetricStore.getById(item.metricId);
-  if (!metric) return '';
-  const threshold = item.params?.threshold !== undefined ? item.params.threshold : 0.7;
-
-  return `
-    <div class="card pipeline-item" draggable="true"
-         data-zone="gate" data-pipeline-index="${index}"
-         ondragstart="onItemDragStart(event, 'gate')"
-         ondragover="onItemDragOver(event)"
-         ondrop="onItemDrop(event, 'gate')"
-         style="cursor:grab; border-left:3px solid var(--danger);">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          <span style="background:#fef2f2; color:var(--danger); padding:2px 8px; border-radius:4px; font-size:12px;">🚪 ${index + 1}</span>
-          <strong style="margin-left:8px;">${escapeHtml(metric.name)}</strong>
-          <span class="badge ${metric.category === 'llm' ? 'badge-llm' : 'badge-non-llm'}" style="margin-left:4px;">${metric.category === 'llm' ? 'LLM' : '非LLM'}</span>
-        </div>
-        <div style="display:flex; gap:4px;">
-          <span style="font-size:12px; color:var(--text-secondary);">阈值: ${threshold}</span>
-          <button class="btn btn-ghost" style="padding:2px 8px; font-size:12px;" onclick="event.stopPropagation(); editItemParams('gate', ${index})">⚙️</button>
-          <button class="btn btn-danger" style="padding:2px 8px; font-size:12px;" onclick="event.stopPropagation(); removeItem('gate', ${index})">✕</button>
-        </div>
-      </div>
-    </div>`;
-}
-
-// --- 打分卡片渲染 ---
-function renderScoreItem(item, index) {
-  const metric = MetricStore.getById(item.metricId);
-  if (!metric) return '';
-  const weight = item.weight !== undefined ? item.weight : 0.3;
-  const strictness = item.strictness !== undefined ? item.strictness : 1.0;
-
-  return `
-    <div class="card pipeline-item" draggable="true"
-         data-zone="score" data-pipeline-index="${index}"
-         ondragstart="onItemDragStart(event, 'score')"
-         ondragover="onItemDragOver(event)"
-         ondrop="onItemDrop(event, 'score')"
-         style="cursor:grab; border-left:3px solid var(--success);">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          <span style="background:#f0fdf4; color:var(--success); padding:2px 8px; border-radius:4px; font-size:12px;">📊 ${index + 1}</span>
-          <strong style="margin-left:8px;">${escapeHtml(metric.name)}</strong>
-          <span class="badge ${metric.category === 'llm' ? 'badge-llm' : 'badge-non-llm'}" style="margin-left:4px;">${metric.category === 'llm' ? 'LLM' : '非LLM'}</span>
-        </div>
-        <div style="display:flex; gap:4px; align-items:center;">
-          <span style="font-size:12px; color:var(--text-secondary);">权重: ${weight} | 严格度: ${strictness}</span>
-          <button class="btn btn-ghost" style="padding:2px 8px; font-size:12px;" onclick="event.stopPropagation(); editItemParams('score', ${index})">⚙️</button>
-          <button class="btn btn-danger" style="padding:2px 8px; font-size:12px;" onclick="event.stopPropagation(); removeItem('score', ${index})">✕</button>
-        </div>
-      </div>
-    </div>`;
-}
-
-// --- 拖拽逻辑 ---
-
-function onMetricDragStart(e) {
-  const id = e.target.closest('[data-metric-id]')?.dataset.metricId;
-  if (id) {
-    e.dataTransfer.setData('text/plain', id);
-    e.dataTransfer.effectAllowed = 'copy';
+function renderParamInput(param, value, fid) {
+  const id = `param-${fid}-${param.key}`;
+  const val = value !== undefined ? value : param.default;
+  switch (param.type) {
+    case 'number': return `<input id="${id}" type="number" value="${val}" min="${param.min||''}" max="${param.max||''}" step="${param.step||0.1}" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;">`;
+    case 'boolean': return `<label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input id="${id}" type="checkbox" ${val?'checked':''}> 启用</label>`;
+    case 'json': return `<textarea id="${id}" rows="4" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;font-family:monospace;font-size:12px;">${typeof val==='object'?JSON.stringify(val,null,2):val}</textarea>`;
+    case 'select': return `<select id="${id}" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;">${(param.options||[]).map(o=>`<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join('')}</select>`;
+    default: return `<input id="${id}" type="text" value="${escapeHtml(String(val??''))}" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;">`;
   }
-}
-
-function onZoneDragOver(e, zone) {
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'copy';
-  e.currentTarget.classList.add('drag-over');
-}
-
-function onZoneDragLeave(e, zone) {
-  e.currentTarget.classList.remove('drag-over');
-}
-
-function onZoneDrop(e, zone) {
-  e.preventDefault();
-  e.currentTarget.classList.remove('drag-over');
-  const data = e.dataTransfer.getData('text/plain');
-  if (!data || data.startsWith('reorder-')) return;
-
-  const metricId = data;
-  const metric = MetricStore.getById(metricId);
-  if (!metric) return;
-
-  const pipeline = zone === 'gate' ? canvasGatePipeline : canvasScorePipeline;
-  if (pipeline.some(item => item.metricId === metricId)) return;
-
-  const defaultParams = {};
-  (metric.params || []).forEach(p => {
-    defaultParams[p.key] = p.default;
-  });
-
-  if (zone === 'gate') {
-    pipeline.push({ metricId, params: defaultParams, order: pipeline.length });
-  } else {
-    pipeline.push({ metricId, params: defaultParams, weight: 0.3, strictness: 1.0, order: pipeline.length });
-  }
-  saveCanvasConfig();
-  renderCanvas();
-}
-
-// 区域内拖拽排序
-function onItemDragStart(e, zone) {
-  e.stopPropagation();
-  const el = e.target.closest('[data-pipeline-index]');
-  if (!el) return;
-  e.dataTransfer.setData('text/plain', `reorder-${zone}-${el.dataset.pipelineIndex}`);
-  e.dataTransfer.effectAllowed = 'move';
-}
-
-function onItemDragOver(e) {
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-}
-
-function onItemDrop(e, zone) {
-  e.preventDefault();
-  e.stopPropagation();
-  const data = e.dataTransfer.getData('text/plain');
-  if (!data || !data.startsWith('reorder-')) return;
-  const parts = data.replace('reorder-', '').split('-');
-  const fromZone = parts[0];
-  const fromIndex = parseInt(parts[1]);
-  const toEl = e.target.closest('[data-pipeline-index]');
-  if (!toEl || fromZone !== zone) return;
-  const toIndex = parseInt(toEl.dataset.pipelineIndex);
-  if (fromIndex === toIndex || isNaN(fromIndex) || isNaN(toIndex)) return;
-
-  const pipeline = zone === 'gate' ? canvasGatePipeline : canvasScorePipeline;
-  const [item] = pipeline.splice(fromIndex, 1);
-  pipeline.splice(toIndex, 0, item);
-  saveCanvasConfig();
-  renderCanvas();
-}
-
-function removeItem(zone, index) {
-  const pipeline = zone === 'gate' ? canvasGatePipeline : canvasScorePipeline;
-  pipeline.splice(index, 1);
-  saveCanvasConfig();
-  renderCanvas();
-}
-
-// --- 参数编辑 ---
-
-function editItemParams(zone, index) {
-  const pipeline = zone === 'gate' ? canvasGatePipeline : canvasScorePipeline;
-  const item = pipeline[index];
-  const metric = MetricStore.getById(item.metricId);
-  if (!metric) return;
-
-  const panel = document.getElementById('param-panel');
-  panel.style.display = 'block';
-
-  const paramFields = (metric.params || []).map(p => {
-    const val = item.params[p.key] !== undefined ? item.params[p.key] : p.default;
-    return `
-      <div>
-        <label style="font-size:12px;">${escapeHtml(p.label)}${p.required ? ' <span style="color:var(--danger);">*</span>' : ''}</label>
-        ${renderParamInput(p, val, zone, index)}
-      </div>`;
-  }).join('');
-
-  const extraFields = zone === 'score' ? `
-    <div>
-      <label style="font-size:12px;">权重</label>
-      <input id="item-weight" type="number" value="${item.weight || 0.3}" min="0.01" max="1" step="0.01"
-        style="width:100%; padding:6px; border:1px solid var(--border); border-radius:4px;">
-    </div>
-    <div>
-      <label style="font-size:12px;">严格度 (0.2=宽松, 1=标准, 5=严格)</label>
-      <input id="item-strictness" type="range" value="${item.strictness || 1.0}" min="0.2" max="5" step="0.1"
-        style="width:100%;" oninput="document.getElementById('strictness-val').textContent=this.value">
-      <span id="strictness-val" style="font-size:12px; color:var(--text-secondary);">${item.strictness || 1.0}</span>
-    </div>` : '';
-
-  panel.innerHTML = `
-    <div class="card" style="position:sticky; top:20px;">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h4>${escapeHtml(metric.name)} — ${zone === 'gate' ? '门禁' : '打分'}参数</h4>
-        <button class="btn btn-ghost" style="padding:2px 8px;" onclick="document.getElementById('param-panel').style.display='none'">✕</button>
-      </div>
-      <form id="pipeline-param-form" style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">
-        ${paramFields || '<p style="color:var(--text-secondary);">此 metric 无参数</p>'}
-        ${extraFields}
-        <button type="submit" class="btn btn-primary">应用</button>
-      </form>
-    </div>
-  `;
-
-  document.getElementById('pipeline-param-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    (metric.params || []).forEach(p => {
-      const input = document.getElementById(`param-${zone}-${index}-${p.key}`);
-      if (input) {
-        let val = input.value;
-        if (p.type === 'number') val = parseFloat(val) || 0;
-        if (p.type === 'boolean') val = input.checked;
-        if (p.type === 'json') {
-          try { val = JSON.parse(val); } catch { val = val; }
-        }
-        item.params[p.key] = val;
-      }
-    });
-    if (zone === 'score') {
-      item.weight = parseFloat(document.getElementById('item-weight')?.value) || 0.3;
-      item.strictness = parseFloat(document.getElementById('item-strictness')?.value) || 1.0;
-    }
-    panel.style.display = 'none';
-    saveCanvasConfig();
-    renderCanvas();
-  });
 }
 
 function renderParamInput(param, value, zone, pipelineIndex) {
@@ -830,75 +765,77 @@ function initPresetMetrics() {
 // Skill 导出
 // ============================================================
 function generateSkillCode() {
-  const customMetrics = [];
-  const gateInstances = [];
-  const scoreInstances = [];
-  const gateList = [];
-  const scoreList = [];
+  const customMetrics = new Set();
+  const fieldCodes = []; // [{ fieldName, gateCode, scoreCode, weights, strictness }]
 
-  function processMetric(item, zone) {
-    const metric = MetricStore.getById(item.metricId);
-    if (!metric) return;
+  canvasFields.forEach(field => {
+    const gateParts = [];
+    const scoreParts = [];
+    const weights = [];
+    const strictness = [];
 
-    if (metric.category === 'non_llm') {
-      let code = metric.code_template;
-      (metric.params || []).forEach(p => {
-        const val = item.params[p.key] !== undefined ? item.params[p.key] : p.default;
-        code = code.replace(new RegExp(`\\{\\{${p.key}\\}\\}`, 'g'), formatCodeValue(val, p.type));
-      });
-      customMetrics.push(code);
-
-      const args = (metric.params || []).map(p => {
-        const val = item.params[p.key] !== undefined ? item.params[p.key] : p.default;
-        return `${p.key}=${formatCodeValue(val, p.type)}`;
-      }).join(', ');
-      const className = (metric.code_template.match(/class (\w+)\(/) || [])[1] || 'UnknownMetric';
-      const instance = `${className}(${args})`;
-      if (zone === 'gate') gateInstances.push(instance);
-      else scoreInstances.push(instance);
-    } else {
-      if (canvasGlobal.judgeMode === 'local_agent') {
-        const name = JSON.stringify(metric.name);
-        const criteria = JSON.stringify(metric.criteria || '');
-        const threshold = zone === 'gate' ? formatCodeValue(item.params['threshold'] || 0.7, 'number') : '0.0';
-        const agentCmd = JSON.stringify(canvasGlobal.agentCommand || 'claude');
-        const instance = `LocalAgentJudge(name=${name}, criteria=${criteria}, threshold=${threshold}, agent_cmd=${agentCmd})`;
-        if (zone === 'gate') gateInstances.push(instance);
-        else scoreInstances.push(instance);
-      } else {
+    function processMetric(item, zone) {
+      const metric = MetricStore.getById(item.metricId);
+      if (!metric) return;
+      if (metric.category === 'non_llm') {
         let code = metric.code_template;
-        code = code.replace('{{criteria}}', metric.criteria || '');
         (metric.params || []).forEach(p => {
           const val = item.params[p.key] !== undefined ? item.params[p.key] : p.default;
           code = code.replace(new RegExp(`\\{\\{${p.key}\\}\\}`, 'g'), formatCodeValue(val, p.type));
         });
-        if (zone === 'gate') gateInstances.push(code);
-        else scoreInstances.push(code);
+        customMetrics.add(code);
+        const args = (metric.params || []).map(p => {
+          const val = item.params[p.key] !== undefined ? item.params[p.key] : p.default;
+          return `${p.key}=${formatCodeValue(val, p.type)}`;
+        }).join(', ');
+        const className = (metric.code_template.match(/class (\w+)\(/) || [])[1] || 'UnknownMetric';
+        if (zone === 'gate') gateParts.push(`${className}(${args})`);
+        else scoreParts.push(`${className}(${args})`);
+      } else {
+        if (canvasGlobal.judgeMode === 'local_agent') {
+          const name = JSON.stringify(metric.name);
+          const criteria = JSON.stringify(metric.criteria || '');
+          const threshold = zone === 'gate' ? formatCodeValue(item.params['threshold'] || 0.7, 'number') : '0.0';
+          const agentCmd = JSON.stringify(canvasGlobal.agentCommand || 'claude');
+          const inst = `LocalAgentJudge(name=${name}, criteria=${criteria}, threshold=${threshold}, agent_cmd=${agentCmd})`;
+          if (zone === 'gate') gateParts.push(inst); else scoreParts.push(inst);
+        } else {
+          let code = metric.code_template;
+          code = code.replace('{{criteria}}', metric.criteria || '');
+          (metric.params || []).forEach(p => {
+            const val = item.params[p.key] !== undefined ? item.params[p.key] : p.default;
+            code = code.replace(new RegExp(`\\{\\{${p.key}\\}\\}`, 'g'), formatCodeValue(val, p.type));
+          });
+          if (zone === 'gate') gateParts.push(code); else scoreParts.push(code);
+        }
       }
     }
-  }
 
-  canvasGatePipeline.forEach((item, i) => {
-    const m = MetricStore.getById(item.metricId);
-    gateList.push(`${i + 1}. [门禁] ${m ? m.name : item.metricId}`);
-    processMetric(item, 'gate');
-  });
-  canvasScorePipeline.forEach((item, i) => {
-    const m = MetricStore.getById(item.metricId);
-    scoreList.push(`${i + 1}. [打分] ${m ? m.name : item.metricId} (权重=${(item.weight||0.3).toFixed(2)}, 严格度=${(item.strictness||1.0).toFixed(1)})`);
-    processMetric(item, 'score');
+    (field.gatePipeline || []).forEach(item => processMetric(item, 'gate'));
+    (field.scorePipeline || []).forEach(item => {
+      processMetric(item, 'score');
+      weights.push(item.weight || 0.3);
+      strictness.push(item.strictness || 1.0);
+    });
+
+    fieldCodes.push({
+      fieldName: field.name || '(全量)',
+      gateCode: gateParts.join(',\n            '),
+      scoreCode: scoreParts.join(',\n            '),
+      weights: weights,
+      strictness: strictness,
+    });
   });
 
   return {
-    customMetricsCode: [...new Set(customMetrics)].join('\n\n'),
-    gateInstances: gateInstances.join(',\n        '),
-    scoreInstances: scoreInstances.join(',\n        '),
-    scoreWeights: canvasScorePipeline.map(item => item.weight || 0.3),
-    scoreStrictness: canvasScorePipeline.map(item => item.strictness || 1.0),
-    gateCount: canvasGatePipeline.length,
-    scoreCount: canvasScorePipeline.length,
-    metricCount: canvasGatePipeline.length + canvasScorePipeline.length,
-    metricList: [...gateList, ...scoreList].join('\n'),
+    customMetricsCode: [...customMetrics].join('\n\n'),
+    fieldCodes: fieldCodes,
+    metricList: canvasFields.map(f => {
+      const n = f.name || '(全量)';
+      const g = (f.gatePipeline||[]).map(it => MetricStore.getById(it.metricId)?.name).filter(Boolean).join(', ');
+      const s = (f.scorePipeline||[]).map(it => MetricStore.getById(it.metricId)?.name).filter(Boolean).join(', ');
+      return `📌 ${n}\n  门禁: ${g||'无'}\n  打分: ${s||'无'}`;
+    }).join('\n\n'),
   };
 }
 
@@ -937,12 +874,58 @@ async function renderExportTab() {
     .replaceAll('{{modelBaseUrl}}', canvasGlobal.modelBaseUrl)
     .replaceAll('{{modelId}}', canvasGlobal.modelId)
     .replaceAll('{{customMetricsCode}}', code.customMetricsCode)
-    .replaceAll('{{gateInstances}}', code.gateInstances)
-    .replaceAll('{{scoreInstances}}', code.scoreInstances)
-    .replaceAll('{{scoreWeights}}', JSON.stringify(code.scoreWeights))
-    .replaceAll('{{scoreStrictness}}', JSON.stringify(code.scoreStrictness));
+    .replaceAll('{{fieldEvalCode}}', generateFieldEvalCode(code.fieldCodes));
 
   container.innerHTML = `
+    <div style="display:flex; flex-direction:column; gap:20px; width:100%;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2>导出 Skill</h2>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <div>
+            <label style="font-size:12px;">评委模式</label>
+            <select id="export-judge-mode" onchange="canvasGlobal.judgeMode=this.value;saveCanvasConfig();renderExportTab();" style="padding:6px;border:1px solid var(--border);border-radius:4px;font-size:13px;">
+              <option value="api" ${canvasGlobal.judgeMode==='api'?'selected':''}>API 调用</option>
+              <option value="local_agent" ${canvasGlobal.judgeMode==='local_agent'?'selected':''}>本地 Agent</option>
+            </select>
+          </div>
+          <div id="export-agent-fields" ${canvasGlobal.judgeMode!=='local_agent'?'style="display:none;"':''}>
+            <label style="font-size:12px;">Agent CLI</label>
+            <input id="export-agent-cmd" value="${escapeHtml(canvasGlobal.agentCommand)}" onchange="canvasGlobal.agentCommand=this.value;saveCanvasConfig();" placeholder="claude" style="width:120px;padding:6px;border:1px solid var(--border);border-radius:4px;font-size:13px;">
+          </div>
+          <button class="btn btn-primary" onclick="downloadSkillZip()" ${canvasFields.every(f=>(f.gatePipeline||[]).length+(f.scorePipeline||[]).length===0)?'disabled':''}>📥 下载 Skill Zip</button>
+        </div>
+      </div>
+      <div class="card"><h3>评测管线预览</h3><pre style="background:#1e293b;color:#e2e8f0;padding:16px;border-radius:8px;overflow:auto;font-size:13px;">${escapeHtml(code.metricList)}</pre></div>
+      <div class="card"><h3>eval_script.py 预览</h3><pre style="background:#1e293b;color:#e2e8f0;padding:16px;border-radius:8px;overflow:auto;max-height:300px;font-size:13px;">${escapeHtml(script)}</pre></div>
+    </div>`;
+}
+
+function generateFieldEvalCode(fieldCodes) {
+  return fieldCodes.map(fc => {
+    const fieldName = fc.fieldName;
+    return `# ====== Field: ${fieldName} ======
+    gate_metrics = [${fc.gateCode || ''}]
+    for m in gate_metrics:
+        evaluate([test_case], [m], run_async=False)
+        if not m.is_successful():
+            print(f"  [GATE FAIL on '${fieldName}'] {m.__name__}: score={m.score:.3f}")
+            return  # skip this case
+    score_metrics = [${fc.scoreCode || ''}]
+    if score_metrics:
+        evaluate([test_case], score_metrics, run_async=False)
+        weights = ${JSON.stringify(fc.weights)}
+        strictness = ${JSON.stringify(fc.strictness)}
+        weighted = 0; total_w = 0
+        for i, m in enumerate(score_metrics):
+            raw = m.score or 0.0
+            adj = math.pow(raw, strictness[i] if i < len(strictness) else 1.0)
+            w = weights[i] if i < len(weights) else 0.3
+            weighted += adj * w; total_w += w
+            print(f"  [SCORE on '${fieldName}'] {m.__name__}: raw={raw:.3f}, adj={adj:.3f}, w={w}")
+        final = round(weighted/total_w, 4) if total_w > 0 else 0.0
+        print(f"  => ${fieldName} final score: {final}")`;
+  }).join('\n\n');
+}
     <div style="display:flex; flex-direction:column; gap:20px; width:100%;">
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <h2>导出 Skill</h2>
@@ -993,10 +976,7 @@ async function downloadSkillZip() {
     .replaceAll('{{modelBaseUrl}}', canvasGlobal.modelBaseUrl)
     .replaceAll('{{modelId}}', canvasGlobal.modelId)
     .replaceAll('{{customMetricsCode}}', code.customMetricsCode)
-    .replaceAll('{{gateInstances}}', code.gateInstances)
-    .replaceAll('{{scoreInstances}}', code.scoreInstances)
-    .replaceAll('{{scoreWeights}}', JSON.stringify(code.scoreWeights))
-    .replaceAll('{{scoreStrictness}}', JSON.stringify(code.scoreStrictness));
+    .replaceAll('{{fieldEvalCode}}', generateFieldEvalCode(code.fieldCodes));
 
   const zip = new JSZip();
   const folder = zip.folder(canvasGlobal.skillName);
