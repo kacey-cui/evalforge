@@ -1,0 +1,11 @@
+{
+  "id": "accuracy",
+  "name": "准确度 (GEval)",
+  "category": "llm",
+  "description": "用 LLM 评估回答是否准确，对比 expected_output 和 actual_output。评委模型走全局配置。",
+  "params": [
+    {"key": "threshold", "label": "通过阈值", "type": "number", "default": 0.7, "min": 0, "max": 1, "step": 0.1}
+  ],
+  "criteria": "评估回答是否准确：对比 expected_output 和 actual_output，判断 factual correctness",
+  "code_template": "GEval(\n    name=\"Accuracy\",\n    criteria=\"{{criteria}}\",\n    evaluation_params=[LLMTestCaseParams.EXPECTED_OUTPUT, LLMTestCaseParams.ACTUAL_OUTPUT],\n    threshold={{threshold}},\n    model=JUDGE_MODEL,\n)"
+}

@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deepeval Visual Configurator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root {
+  --primary: #4f46e5;
+  --primary-light: #eef2ff;
+  --bg: #f8fafc;
+  --card-bg: #ffffff;
+  --border: #e2e8f0;
+  --text: #1e293b;
+  --text-secondary: #64748b;
+  --danger: #ef4444;
+  --success: #22c55e;
+  --radius: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+#app { height: 100vh; display: flex; flex-direction: column; }
+
+/* Tab 导航 */
+#tabs { display: flex; gap: 4px; padding: 12px 16px; background: var(--card-bg); border-bottom: 1px solid var(--border); }
+.tab { padding: 8px 20px; border: none; background: none; cursor: pointer; border-radius: 6px; font-size: 14px; color: var(--text-secondary); }
+.tab:hover { background: var(--bg); }
+.tab.active { background: var(--primary); color: white; }
+
+/* 内容区 */
+.tab-content { display: none; flex: 1; overflow: auto; padding: 20px; }
+.tab-content.active { display: flex; }
+
+/* 卡片 */
+.card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); }
+.card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+
+/* 按钮 */
+.btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { opacity: 0.9; }
+.btn-danger { background: var(--danger); color: white; }
+.btn-danger:hover { opacity: 0.9; }
+.btn-ghost { background: none; border: 1px solid var(--border); }
+.btn-ghost:hover { background: var(--bg); }
+
+/* 输入框 */
+input, textarea, select { font-family: inherit; }
+label { font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 2px; }
+
+/* Modal overlay */
+#metric-form-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.3);
+  display: none; justify-content: center; align-items: center;
+  z-index: 1000;
+}
+
+/* 拖拽相关 */
+.metric-source { cursor: grab; }
+.metric-source:active { cursor: grabbing; }
+.pipeline-item { cursor: grab; border-left: 3px solid var(--primary); }
+.pipeline-item:active { cursor: grabbing; }
+#canvas-drop-zone.drag-over { border-color: var(--primary); background: var(--primary-light); }
+
+/* 预置标签 */
+.badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; }
+.badge-non-llm { background: #dbeafe; color: #1e40af; }
+.badge-llm { background: #fef3c7; color: #92400e; }
+</style>
+</head>
+<body>
+<div id="app">
+  <nav id="tabs">
+    <button class="tab active" data-tab="metrics">📦 Metric 库</button>
+    <button class="tab" data-tab="canvas">🎨 Canvas 编排</button>
+    <button class="tab" data-tab="export">📥 导出 Skill</button>
+  </nav>
+  <div id="tab-metrics" class="tab-content active"></div>
+  <div id="tab-canvas" class="tab-content"></div>
+  <div id="tab-export" class="tab-content"></div>
+</div>
+<div id="metric-form-overlay"></div>
+
+<script>
+// ============================================================
+// Canvas 状态
+// ============================================================
+let canvasGatePipeline = [];   // [{ metricId, params, order }]
+let canvasScorePipeline = [];  // [{ metricId, params, weight, strictness, order }]
+let canvasGlobal = {
+  modelBaseUrl: 'https://your-model-gateway.example.com/v1',
+  modelId: '',
+  skillName: 'my-eval-skill',
+  judgeMode: 'api',
+  agentCommand: 'claude',
+};
+
+// ============================================================
+// Metric Store — 持久化层
+// ============================================================
+const MetricStore = (() => {
+  const LS_KEY = 'deepeval_metrics';
+
+  function _loadFromLS() {
+    try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; }
+    catch { return []; }
+  }
+
+  function _saveToLS(metrics) {
+    localStorage.setItem(LS_KEY, JSON.stringify(metrics));
+  }
+
+  let metrics = _loadFromLS();
+
+  return {
+    getAll() { return metrics; },
+    getById(id) { return metrics.find(m => m.id === id); },
+    getByCategory(cat) { return metrics.filter(m => m.category === cat); },
+
+    save(metric) {
+      const idx = metrics.findIndex(m => m.id === metric.id);
+      if (idx >= 0) metrics[idx] = metric;
+      else metrics.push(metric);
+      _saveToLS(metrics);
+    },
+
+    delete(id) {
+      metrics = metrics.filter(m => m.id !== id);
+      _saveToLS(metrics);
+    },
+
+    reload() {
+      metrics = _loadFromLS();
+      return metrics;
+    }
+  };
+})();
+
+// ============================================================
+// Canvas 配置持久化
+// ============================================================
+function saveCanvasConfig() {
+  canvasGlobal.modelBaseUrl = document.getElementById('cfg-base-url')?.value || canvasGlobal.modelBaseUrl;
+  canvasGlobal.modelId = document.getElementById('cfg-model-id')?.value || canvasGlobal.modelId;
+  canvasGlobal.skillName = document.getElementById('cfg-skill-name')?.value || canvasGlobal.skillName;
+  canvasGlobal.judgeMode = document.getElementById('cfg-judge-mode')?.value || canvasGlobal.judgeMode;
+  canvasGlobal.agentCommand = document.getElementById('cfg-agent-cmd')?.value || canvasGlobal.agentCommand;
+  localStorage.setItem('deepeval_canvas_gate_pipeline', JSON.stringify(canvasGatePipeline));
+  localStorage.setItem('deepeval_canvas_score_pipeline', JSON.stringify(canvasScorePipeline));
+  localStorage.setItem('deepeval_canvas_global', JSON.stringify(canvasGlobal));
+}
+
+function loadCanvasConfig() {
+  try {
+    canvasGatePipeline = JSON.parse(localStorage.getItem('deepeval_canvas_gate_pipeline')) || [];
+    canvasScorePipeline = JSON.parse(localStorage.getItem('deepeval_canvas_score_pipeline')) || [];
+    canvasGlobal = JSON.parse(localStorage.getItem('deepeval_canvas_global')) || canvasGlobal;
+  } catch { /* use defaults */ }
+}
+
+// ============================================================
+// Tab 切换
+// ============================================================
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+    // 切换时重新渲染
+    const tabName = btn.dataset.tab;
+    if (tabName === 'metrics') renderMetricLibrary();
+    if (tabName === 'canvas') renderCanvas();
+    if (tabName === 'export') renderExportTab();
+  });
+});
+
+// ============================================================
+// Metric 库 Tab
+// ============================================================
+function renderMetricLibrary() {
+  const container = document.getElementById('tab-metrics');
+  const metrics = MetricStore.getAll();
+  const nonLlm = metrics.filter(m => m.category === 'non_llm');
+  const llm = metrics.filter(m => m.category === 'llm');
+
+  container.innerHTML = `
+    <div style="display:flex; flex-direction:column; gap:20px; width:100%;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2>Metric 模板库</h2>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-ghost" onclick="resetMetrics()" style="font-size:12px;">🔄 重置为默认</button>
+          <button class="btn btn-primary" onclick="showMetricForm()">+ 新建 Metric</button>
+        </div>
+      </div>
+      <div id="metric-list">
+        <h3 style="color:var(--text-secondary); margin-bottom:12px;">非 LLM Metric <span class="badge badge-non-llm">${nonLlm.length}</span></h3>
+        <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:12px;">
+          ${nonLlm.length ? nonLlm.map(m => metricCard(m)).join('') : '<div style="color:var(--text-secondary);">暂无</div>'}
+        </div>
+        <h3 style="color:var(--text-secondary); margin:20px 0 12px;">LLM Metric <span class="badge badge-llm">${llm.length}</span></h3>
+        <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:12px;">
+          ${llm.length ? llm.map(m => metricCard(m)).join('') : '<div style="color:var(--text-secondary);">暂无</div>'}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function metricCard(m) {
+  const paramList = (m.params || []).map(p => `${p.label}: ${p.type}`).join(', ') || '无参数';
+  return `
+    <div class="card" draggable="true" data-metric-id="${m.id}" ondragstart="onMetricDragStart(event)">
+      <div style="display:flex; justify-content:space-between; align-items:start;">
+        <div>
+          <strong>${escapeHtml(m.name)}</strong>
+          <span style="font-size:11px; color:var(--text-secondary); margin-left:8px;">${escapeHtml(m.id)}</span>
+        </div>
+        <div style="display:flex; gap:4px;">
+          <button class="btn btn-ghost" style="padding:2px 8px; font-size:12px;" onclick="event.stopPropagation(); showMetricForm('${m.id}')">✏️</button>
+          <button class="btn btn-danger" style="padding:2px 8px; font-size:12px;" onclick="event.stopPropagation(); deleteMetric('${m.id}')">🗑️</button>
+        </div>
+      </div>
+      <p style="font-size:13px; color:var(--text-secondary); margin:6px 0;">${escapeHtml(m.description || '')}</p>
+      <p style="font-size:12px; color:var(--text-secondary);">参数: ${escapeHtml(paramList)}</p>
+    </div>`;
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function showMetricForm(editId) {
+  const metric = editId ? MetricStore.getById(editId) : null;
+  const isEdit = !!metric;
+  const data = metric || { id: '', name: '', category: 'non_llm', description: '', params: [], criteria: '', code_template: '' };
+
+  const overlay = document.getElementById('metric-form-overlay');
+  overlay.style.display = 'flex';
+  overlay.innerHTML = `
+    <div class="card" style="width:600px; max-height:85vh; overflow:auto;">
+      <h3>${isEdit ? '编辑' : '新建'} Metric</h3>
+      <form id="metric-form" style="display:flex; flex-direction:column; gap:12px; margin-top:12px;">
+        <div>
+          <label>ID <span style="color:var(--danger);">*</span></label>
+          <input name="id" value="${escapeHtml(data.id)}" ${isEdit ? 'readonly' : ''} required placeholder="如: json_schema"
+            style="width:100%; padding:8px; border:1px solid var(--border); border-radius:4px;">
+        </div>
+        <div>
+          <label>名称 <span style="color:var(--danger);">*</span></label>
+          <input name="name" value="${escapeHtml(data.name)}" required placeholder="如: JSON Schema 校验"
+            style="width:100%; padding:8px; border:1px solid var(--border); border-radius:4px;">
+        </div>
+        <div>
+          <label>分类</label>
+          <select name="category" style="width:100%; padding:8px; border:1px solid var(--border); border-radius:4px;">
+            <option value="non_llm" ${data.category==='non_llm'?'selected':''}>非 LLM</option>
+            <option value="llm" ${data.category==='llm'?'selected':''}>LLM (GEval)</option>
+          </select>
+        </div>
+        <div>
+          <label>描述</label>
+          <textarea name="description" rows="2" style="width:100%; padding:8px; border:1px solid var(--border); border-radius:4px;">${escapeHtml(data.description)}</textarea>
+        </div>
+        <div class="llm-only-field" ${data.category==='llm'?'':'style="display:none;"'}>
+          <label>LLM 评分标准</label>
+          <textarea name="criteria" rows="2" placeholder="如：评估回答是否准确、完整" style="width:100%; padding:8px; border:1px solid var(--border); border-radius:4px;">${escapeHtml(data.criteria || '')}</textarea>
+        </div>
+        <div>
+          <label>参数定义</label>
+          <div id="params-editor" style="display:flex; flex-direction:column; gap:4px;"></div>
+          <button type="button" class="btn btn-ghost" style="margin-top:4px; font-size:12px;" onclick="addParamField()">+ 添加参数</button>
+        </div>
+        <div>
+          <label>Python 代码模板 <span style="font-weight:normal; color:var(--text-secondary);">（导出 Skill 时用）</span></label>
+          <details style="margin-bottom:8px;">
+            <summary style="font-size:12px; color:var(--primary); cursor:pointer;">什么是代码模板？</summary>
+            <div style="font-size:12px; color:var(--text-secondary); padding:8px; background:var(--bg); border-radius:4px; margin-top:4px;">
+              <p><strong>非 LLM metric：</strong>填写完整的 Python 类定义（继承 BaseMetric），导出时会替换 <code v-pre>{{参数名}}</code> 为用户配置的值。</p>
+              <p><strong>LLM metric：</strong>填写 GEval 调用代码，评委模型自动从全局配置获取，无需在 metric 中指定。</p>
+              <p style="margin-top:4px;"><strong>预置 metric 已填好，无需修改。</strong>只有新建自定义 metric 时才需要编辑。</p>
+            </div>
+          </details>
+          <textarea name="code_template" rows="6" placeholder="class MyMetric(BaseMetric): ..." style="width:100%; padding:8px; border:1px solid var(--border); border-radius:4px; font-family:monospace; font-size:12px;">${escapeHtml(data.code_template)}</textarea>
+        </div>
+        <div style="display:flex; gap:8px; justify-content:flex-end;">
+          <button type="button" class="btn btn-ghost" onclick="closeMetricForm()">取消</button>
+          <button type="submit" class="btn btn-primary">保存</button>
+        </div>
+      </form>
+    </div>
+  `;
+
+  // 监听分类切换，显示/隐藏 criteria 字段
+  overlay.querySelector('select[name="category"]').addEventListener('change', (e) => {
+    const llmField = overlay.querySelector('.llm-only-field');
+    if (e.target.value === 'llm') {
+      llmField.style.display = 'block';
+    } else {
+      llmField.style.display = 'none';
+    }
+  });
+
+  // 渲染已有参数
+  const paramsEditor = document.getElementById('params-editor');
+  (data.params || []).forEach((p, i) => {
+    paramsEditor.appendChild(createParamRow(p, i));
+  });
+
+  // 表单提交
+  document.getElementById('metric-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const params = [];
+    document.querySelectorAll('.param-row').forEach(row => {
+      const key = row.querySelector('[name="param_key"]')?.value || '';
+      if (!key) return;
+      params.push({
+        key: key,
+        label: row.querySelector('[name="param_label"]')?.value || key,
+        type: row.querySelector('[name="param_type"]')?.value || 'string',
+        default: row.querySelector('[name="param_default"]')?.value || '',
+        required: row.querySelector('[name="param_required"]')?.checked || false,
+      });
+    });
+    const newMetric = {
+      id: form.id.value.trim(),
+      name: form.name.value.trim(),
+      category: form.category.value,
+      description: form.description.value,
+      params: params,
+      criteria: form.category.value === 'llm' ? form.criteria.value : null,
+      code_template: form.code_template.value,
+    };
+    if (!newMetric.id || !newMetric.name) {
+      alert('ID 和名称不能为空');
+      return;
+    }
+    MetricStore.save(newMetric);
+    closeMetricForm();
+    renderMetricLibrary();
+  });
+}
+
+function createParamRow(param, index) {
+  const div = document.createElement('div');
+  div.className = 'param-row';
+  div.style.cssText = 'display:grid; grid-template-columns:1fr 1fr 90px 1fr 50px; gap:4px; align-items:center;';
+  div.innerHTML = `
+    <input name="param_key" placeholder="key" value="${escapeHtml(param.key || '')}" style="padding:4px; border:1px solid var(--border); border-radius:4px; font-size:12px;">
+    <input name="param_label" placeholder="显示名" value="${escapeHtml(param.label || '')}" style="padding:4px; border:1px solid var(--border); border-radius:4px; font-size:12px;">
+    <select name="param_type" style="padding:4px; border:1px solid var(--border); border-radius:4px; font-size:12px;">
+      <option value="string" ${param.type==='string'?'selected':''}>string</option>
+      <option value="number" ${param.type==='number'?'selected':''}>number</option>
+      <option value="boolean" ${param.type==='boolean'?'selected':''}>boolean</option>
+      <option value="json" ${param.type==='json'?'selected':''}>json</option>
+      <option value="select" ${param.type==='select'?'selected':''}>select</option>
+    </select>
+    <input name="param_default" placeholder="默认值" value="${escapeHtml(String(param.default ?? ''))}" style="padding:4px; border:1px solid var(--border); border-radius:4px; font-size:12px;">
+    <label style="font-size:11px; display:flex; align-items:center; gap:2px; white-space:nowrap;">
+      <input name="param_required" type="checkbox" ${param.required ? 'checked' : ''}> 必填
+    </label>
+  `;
+  return div;
+}
+
+function addParamField() {
+  const editor = document.getElementById('params-editor');
+  if (editor) {
+    editor.appendChild(createParamRow({ key: '', label: '', type: 'string', default: '', required: false }, Date.now()));
+  }
+}
+
+function closeMetricForm() {
+  document.getElementById('metric-form-overlay').style.display = 'none';
+}
+
+function deleteMetric(id) {
+  if (confirm(`确定删除 ${id}？`)) {
+    MetricStore.delete(id);
+    renderMetricLibrary();
+  }
+}
+
+// ============================================================
+// Canvas 编排 Tab
+// ============================================================
+function renderCanvas() {
+  const container = document.getElementById('tab-canvas');
+  const metrics = MetricStore.getAll();
+  const savedSearch = document.getElementById('metric-search')?.value || '';
+
+  container.innerHTML = `
+    <div style="display:flex; gap:20px; width:100%; height:100%;">
+      <!-- 左侧 Metric 面板 -->
+      <div style="width:260px; flex-shrink:0; display:flex; flex-direction:column; gap:8px;">
+        <h3>可用 Metric</h3>
+        <input id="metric-search" type="text" placeholder="搜索 metric..." oninput="filterMetricSidebar()"
+          style="width:100%; padding:6px 8px; border:1px solid var(--border); border-radius:4px; font-size:13px;">
+        <div style="flex:1; overflow:auto; display:flex; flex-direction:column; gap:8px;" id="metric-sidebar">
+          ${metrics.length === 0
+            ? '<div style="color:var(--text-secondary);">请先在 Metric 库中创建</div>'
+            : metrics.map(m => `
+              <div class="card metric-source" draggable="true"
+                   data-metric-id="${m.id}"
+                   data-metric-name="${escapeHtml(m.name)}"
+                   data-metric-desc="${escapeHtml(m.description || '')}"
+                   ondragstart="onMetricDragStart(event)"
+                   style="cursor:grab; padding:10px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <strong>${escapeHtml(m.name)}</strong>
+                  <span class="badge ${m.category === 'llm' ? 'badge-llm' : 'badge-non-llm'}">${m.category === 'llm' ? 'LLM' : '非LLM'}</span>
+                </div>
+                <p style="font-size:12px; color:var(--text-secondary); margin-top:4px;">${escapeHtml((m.description || '').substring(0, 50))}</p>
+              </div>
+            `).join('')}
+        </div>
+      </div>
+
+      <!-- 中间 Canvas -->
+      <div style="flex:1; display:flex; flex-direction:column; gap:12px; overflow:auto;">
+        <!-- 门禁指标区 -->
+        <div style="display:flex; flex-direction:column;">
+          <h3 style="margin-bottom:8px;">🚪 门禁指标 <span style="font-size:12px; color:var(--text-secondary); font-weight:normal;">（顺序执行，不通过则停止）</span></h3>
+          <div id="gate-drop-zone"
+               ondragover="onZoneDragOver(event, 'gate')"
+               ondragleave="onZoneDragLeave(event, 'gate')"
+               ondrop="onZoneDrop(event, 'gate')"
+               style="border:2px dashed var(--border); border-radius:var(--radius);
+                      padding:16px; min-height:120px; background:var(--bg);
+                      display:flex; flex-direction:column; gap:8px;">
+            ${canvasGatePipeline.length === 0
+              ? '<div style="text-align:center; color:var(--text-secondary); padding:30px 0;">拖入门禁 Metric</div>'
+              : canvasGatePipeline.map((item, i) => renderGateItem(item, i)).join('')
+            }
+          </div>
+        </div>
+
+        <!-- 打分指标区 -->
+        <div style="display:flex; flex-direction:column;">
+          <h3 style="margin-bottom:8px;">📊 打分指标 <span style="font-size:12px; color:var(--text-secondary); font-weight:normal;">（全部执行，加权平均）</span></h3>
+          <div id="score-drop-zone"
+               ondragover="onZoneDragOver(event, 'score')"
+               ondragleave="onZoneDragLeave(event, 'score')"
+               ondrop="onZoneDrop(event, 'score')"
+               style="border:2px dashed var(--border); border-radius:var(--radius);
+                      padding:16px; min-height:120px; background:var(--bg);
+                      display:flex; flex-direction:column; gap:8px;">
+            ${canvasScorePipeline.length === 0
+              ? '<div style="text-align:center; color:var(--text-secondary); padding:30px 0;">拖入打分 Metric</div>'
+              : canvasScorePipeline.map((item, i) => renderScoreItem(item, i)).join('')
+            }
+          </div>
+          ${canvasScorePipeline.length > 0 ? `
+            <div style="margin-top:8px; padding:8px 12px; background:var(--primary-light); border-radius:var(--radius); font-size:13px; color:var(--primary);">
+              加权总分 = ${canvasScorePipeline.map((item, i) => {
+                const m = MetricStore.getById(item.metricId);
+                return `<strong>${(item.weight || 0.3).toFixed(2)} × ${m ? m.name : '?'}</strong>`;
+              }).join(' + ')}
+            </div>
+          ` : ''}
+        </div>
+
+        <!-- 全局配置 -->
+        <div class="card">
+          <h4>全局配置</h4>
+          <div style="display:flex; gap:12px; align-items:end; flex-wrap:wrap;">
+            <div>
+              <label style="font-size:12px;">评委模式</label>
+              <select id="cfg-judge-mode" onchange="saveCanvasConfig()" style="padding:6px; border:1px solid var(--border); border-radius:4px; font-size:13px;">
+                <option value="api" ${canvasGlobal.judgeMode === 'api' ? 'selected' : ''}>API 调用</option>
+                <option value="local_agent" ${canvasGlobal.judgeMode === 'local_agent' ? 'selected' : ''}>本地 Agent</option>
+              </select>
+            </div>
+            <div id="cfg-api-fields" ${canvasGlobal.judgeMode === 'local_agent' ? 'style="display:none;"' : ''}>
+              <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                <div>
+                  <label style="font-size:12px;">模型 API 地址</label>
+                  <input id="cfg-base-url" value="${escapeHtml(canvasGlobal.modelBaseUrl)}" onchange="saveCanvasConfig()"
+                    style="width:230px; padding:6px; border:1px solid var(--border); border-radius:4px;">
+                </div>
+                <div>
+                  <label style="font-size:12px;">模型 ID</label>
+                  <input id="cfg-model-id" value="${escapeHtml(canvasGlobal.modelId)}" onchange="saveCanvasConfig()" placeholder="如: your-model-id"
+                    style="width:170px; padding:6px; border:1px solid var(--border); border-radius:4px;">
+                </div>
+              </div>
+            </div>
+            <div id="cfg-agent-fields" ${canvasGlobal.judgeMode !== 'local_agent' ? 'style="display:none;"' : ''}>
+              <div>
+                <label style="font-size:12px;">Agent CLI 命令</label>
+                <input id="cfg-agent-cmd" value="${escapeHtml(canvasGlobal.agentCommand)}" onchange="saveCanvasConfig()" placeholder="claude / codex / claude-code"
+                  style="width:180px; padding:6px; border:1px solid var(--border); border-radius:4px;">
+              </div>
+            </div>
+            <div>
+              <label style="font-size:12px;">Skill 名称</label>
+              <input id="cfg-skill-name" value="${escapeHtml(canvasGlobal.skillName)}" onchange="saveCanvasConfig()"
+                style="width:150px; padding:6px; border:1px solid var(--border); border-radius:4px;">
+            </div>
+            <button class="btn btn-primary" onclick="saveCanvasConfig()">💾 保存</button>
+          </div>
+          <p style="font-size:11px; color:var(--text-secondary); margin-top:8px;">
+            <span id="cfg-hint-api" ${canvasGlobal.judgeMode === 'local_agent' ? 'style="display:none;"' : ''}>API 模式：所有 LLM metric 统一使用上方配置的模型作为评委</span>
+            <span id="cfg-hint-agent" ${canvasGlobal.judgeMode !== 'local_agent' ? 'style="display:none;"' : ''}>本地 Agent 模式：LLM metric 通过本地 agent 作为评委，无需 API Key</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- 右侧参数编辑面板 -->
+      <div id="param-panel" style="width:300px; flex-shrink:0; display:none;"></div>
+    </div>
+  `;
+
+  // 监听评委模式切换
+  document.getElementById('cfg-judge-mode').addEventListener('change', (e) => {
+    canvasGlobal.judgeMode = e.target.value;
+    const apiFields = document.getElementById('cfg-api-fields');
+    const agentFields = document.getElementById('cfg-agent-fields');
+    const hintApi = document.getElementById('cfg-hint-api');
+    const hintAgent = document.getElementById('cfg-hint-agent');
+    if (e.target.value === 'local_agent') {
+      apiFields.style.display = 'none'; agentFields.style.display = 'block';
+      hintApi.style.display = 'none'; hintAgent.style.display = 'inline';
+    } else {
+      apiFields.style.display = 'block'; agentFields.style.display = 'none';
+      hintApi.style.display = 'inline'; hintAgent.style.display = 'none';
+    }
+    saveCanvasConfig();
+  });
+
+  if (savedSearch) {
+    setTimeout(() => {
+      const si = document.getElementById('metric-search');
+      if (si) { si.value = savedSearch; filterMetricSidebar(); }
+    }, 0);
+  }
+}
+
+function filterMetricSidebar() {
+  const query = (document.getElementById('metric-search')?.value || '').toLowerCase();
+  const cards = document.querySelectorAll('#metric-sidebar .metric-source');
+  cards.forEach(card => {
+    const name = (card.dataset.metricName || '').toLowerCase();
+    const desc = (card.dataset.metricDesc || '').toLowerCase();
+    card.style.display = (!query || name.includes(query) || desc.includes(query)) ? '' : 'none';
+  });
+}
+
+// --- 门禁卡片渲染 ---
+function renderGateItem(item, index) {
+  const metric = MetricStore.getById(item.metricId);
+  if (!metric) return '';
+  const threshold = item.params?.threshold !== undefined ? item.params.threshold : 0.7;
+
+  return `
+    <div class="card pipeline-item" draggable="true"
+         data-zone="gate" data-pipeline-index="${index}"
+         ondragstart="onItemDragStart(event, 'gate')"
+         ondragover="onItemDragOver(event)"
+         ondrop="onItemDrop(event, 'gate')"
+         style="cursor:grab; border-left:3px solid var(--danger);">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <span style="background:#fef2f2; color:var(--danger); padding:2px 8px; border-radius:4px; font-size:12px;">🚪 ${index + 1}</span>
+          <strong style="margin-left:8px;">${escapeHtml(metric.name)}</strong>
+          <span class="badge ${metric.category === 'llm' ? 'badge-llm' : 'badge-non-llm'}" style="margin-left:4px;">${metric.category === 'llm' ? 'LLM' : '非LLM'}</span>
+        </div>
+        <div style="display:flex; gap:4px;">
+          <span style="font-size:12px; color:var(--text-secondary);">阈值: ${threshold}</span>
+          <button class="btn btn-ghost" style="padding:2px 8px; font-size:12px;" onclick="event.stopPropagation(); editItemParams('gate', ${index})">⚙️</button>
+          <button class="btn btn-danger" style="padding:2px 8px; font-size:12px;" onclick="event.stopPropagation(); removeItem('gate', ${index})">✕</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+// --- 打分卡片渲染 ---
+function renderScoreItem(item, index) {
+  const metric = MetricStore.getById(item.metricId);
+  if (!metric) return '';
+  const weight = item.weight !== undefined ? item.weight : 0.3;
+  const strictness = item.strictness !== undefined ? item.strictness : 1.0;
+
+  return `
+    <div class="card pipeline-item" draggable="true"
+         data-zone="score" data-pipeline-index="${index}"
+         ondragstart="onItemDragStart(event, 'score')"
+         ondragover="onItemDragOver(event)"
+         ondrop="onItemDrop(event, 'score')"
+         style="cursor:grab; border-left:3px solid var(--success);">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <span style="background:#f0fdf4; color:var(--success); padding:2px 8px; border-radius:4px; font-size:12px;">📊 ${index + 1}</span>
+          <strong style="margin-left:8px;">${escapeHtml(metric.name)}</strong>
+          <span class="badge ${metric.category === 'llm' ? 'badge-llm' : 'badge-non-llm'}" style="margin-left:4px;">${metric.category === 'llm' ? 'LLM' : '非LLM'}</span>
+        </div>
+        <div style="display:flex; gap:4px; align-items:center;">
+          <span style="font-size:12px; color:var(--text-secondary);">权重: ${weight} | 严格度: ${strictness}</span>
+          <button class="btn btn-ghost" style="padding:2px 8px; font-size:12px;" onclick="event.stopPropagation(); editItemParams('score', ${index})">⚙️</button>
+          <button class="btn btn-danger" style="padding:2px 8px; font-size:12px;" onclick="event.stopPropagation(); removeItem('score', ${index})">✕</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+// --- 拖拽逻辑 ---
+
+function onMetricDragStart(e) {
+  const id = e.target.closest('[data-metric-id]')?.dataset.metricId;
+  if (id) {
+    e.dataTransfer.setData('text/plain', id);
+    e.dataTransfer.effectAllowed = 'copy';
+  }
+}
+
+function onZoneDragOver(e, zone) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'copy';
+  e.currentTarget.classList.add('drag-over');
+}
+
+function onZoneDragLeave(e, zone) {
+  e.currentTarget.classList.remove('drag-over');
+}
+
+function onZoneDrop(e, zone) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const data = e.dataTransfer.getData('text/plain');
+  if (!data || data.startsWith('reorder-')) return;
+
+  const metricId = data;
+  const metric = MetricStore.getById(metricId);
+  if (!metric) return;
+
+  const pipeline = zone === 'gate' ? canvasGatePipeline : canvasScorePipeline;
+  if (pipeline.some(item => item.metricId === metricId)) return;
+
+  const defaultParams = {};
+  (metric.params || []).forEach(p => {
+    defaultParams[p.key] = p.default;
+  });
+
+  if (zone === 'gate') {
+    pipeline.push({ metricId, params: defaultParams, order: pipeline.length });
+  } else {
+    pipeline.push({ metricId, params: defaultParams, weight: 0.3, strictness: 1.0, order: pipeline.length });
+  }
+  saveCanvasConfig();
+  renderCanvas();
+}
+
+// 区域内拖拽排序
+function onItemDragStart(e, zone) {
+  e.stopPropagation();
+  const el = e.target.closest('[data-pipeline-index]');
+  if (!el) return;
+  e.dataTransfer.setData('text/plain', `reorder-${zone}-${el.dataset.pipelineIndex}`);
+  e.dataTransfer.effectAllowed = 'move';
+}
+
+function onItemDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+}
+
+function onItemDrop(e, zone) {
+  e.preventDefault();
+  e.stopPropagation();
+  const data = e.dataTransfer.getData('text/plain');
+  if (!data || !data.startsWith('reorder-')) return;
+  const parts = data.replace('reorder-', '').split('-');
+  const fromZone = parts[0];
+  const fromIndex = parseInt(parts[1]);
+  const toEl = e.target.closest('[data-pipeline-index]');
+  if (!toEl || fromZone !== zone) return;
+  const toIndex = parseInt(toEl.dataset.pipelineIndex);
+  if (fromIndex === toIndex || isNaN(fromIndex) || isNaN(toIndex)) return;
+
+  const pipeline = zone === 'gate' ? canvasGatePipeline : canvasScorePipeline;
+  const [item] = pipeline.splice(fromIndex, 1);
+  pipeline.splice(toIndex, 0, item);
+  saveCanvasConfig();
+  renderCanvas();
+}
+
+function removeItem(zone, index) {
+  const pipeline = zone === 'gate' ? canvasGatePipeline : canvasScorePipeline;
+  pipeline.splice(index, 1);
+  saveCanvasConfig();
+  renderCanvas();
+}
+
+// --- 参数编辑 ---
+
+function editItemParams(zone, index) {
+  const pipeline = zone === 'gate' ? canvasGatePipeline : canvasScorePipeline;
+  const item = pipeline[index];
+  const metric = MetricStore.getById(item.metricId);
+  if (!metric) return;
+
+  const panel = document.getElementById('param-panel');
+  panel.style.display = 'block';
+
+  const paramFields = (metric.params || []).map(p => {
+    const val = item.params[p.key] !== undefined ? item.params[p.key] : p.default;
+    return `
+      <div>
+        <label style="font-size:12px;">${escapeHtml(p.label)}${p.required ? ' <span style="color:var(--danger);">*</span>' : ''}</label>
+        ${renderParamInput(p, val, zone, index)}
+      </div>`;
+  }).join('');
+
+  const extraFields = zone === 'score' ? `
+    <div>
+      <label style="font-size:12px;">权重</label>
+      <input id="item-weight" type="number" value="${item.weight || 0.3}" min="0.01" max="1" step="0.01"
+        style="width:100%; padding:6px; border:1px solid var(--border); border-radius:4px;">
+    </div>
+    <div>
+      <label style="font-size:12px;">严格度 (0.2=宽松, 1=标准, 5=严格)</label>
+      <input id="item-strictness" type="range" value="${item.strictness || 1.0}" min="0.2" max="5" step="0.1"
+        style="width:100%;" oninput="document.getElementById('strictness-val').textContent=this.value">
+      <span id="strictness-val" style="font-size:12px; color:var(--text-secondary);">${item.strictness || 1.0}</span>
+    </div>` : '';
+
+  panel.innerHTML = `
+    <div class="card" style="position:sticky; top:20px;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h4>${escapeHtml(metric.name)} — ${zone === 'gate' ? '门禁' : '打分'}参数</h4>
+        <button class="btn btn-ghost" style="padding:2px 8px;" onclick="document.getElementById('param-panel').style.display='none'">✕</button>
+      </div>
+      <form id="pipeline-param-form" style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">
+        ${paramFields || '<p style="color:var(--text-secondary);">此 metric 无参数</p>'}
+        ${extraFields}
+        <button type="submit" class="btn btn-primary">应用</button>
+      </form>
+    </div>
+  `;
+
+  document.getElementById('pipeline-param-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    (metric.params || []).forEach(p => {
+      const input = document.getElementById(`param-${zone}-${index}-${p.key}`);
+      if (input) {
+        let val = input.value;
+        if (p.type === 'number') val = parseFloat(val) || 0;
+        if (p.type === 'boolean') val = input.checked;
+        if (p.type === 'json') {
+          try { val = JSON.parse(val); } catch { val = val; }
+        }
+        item.params[p.key] = val;
+      }
+    });
+    if (zone === 'score') {
+      item.weight = parseFloat(document.getElementById('item-weight')?.value) || 0.3;
+      item.strictness = parseFloat(document.getElementById('item-strictness')?.value) || 1.0;
+    }
+    panel.style.display = 'none';
+    saveCanvasConfig();
+    renderCanvas();
+  });
+}
+
+function renderParamInput(param, value, zone, pipelineIndex) {
+  const id = `param-${zone}-${pipelineIndex}-${param.key}`;
+  const val = value !== undefined ? value : param.default;
+
+  switch (param.type) {
+    case 'number':
+      return `<input id="${id}" type="number" value="${val}" min="${param.min || ''}" max="${param.max || ''}" step="${param.step || 0.1}"
+        style="width:100%; padding:6px; border:1px solid var(--border); border-radius:4px;">`;
+    case 'boolean':
+      return `<label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+        <input id="${id}" type="checkbox" ${val ? 'checked' : ''}> 启用
+      </label>`;
+    case 'json':
+      return `<textarea id="${id}" rows="4" style="width:100%; padding:6px; border:1px solid var(--border); border-radius:4px; font-family:monospace; font-size:12px;">${typeof val === 'object' ? JSON.stringify(val, null, 2) : val}</textarea>`;
+    case 'select':
+      return `<select id="${id}" style="width:100%; padding:6px; border:1px solid var(--border); border-radius:4px;">
+        ${(param.options || []).map(o => `<option value="${o}" ${val === o ? 'selected' : ''}>${o}</option>`).join('')}
+      </select>`;
+    default:
+      return `<input id="${id}" type="text" value="${escapeHtml(String(val ?? ''))}"
+        style="width:100%; padding:6px; border:1px solid var(--border); border-radius:4px;">`;
+  }
+}
+
+// ============================================================
+// 预置 Metric 初始化
+// ============================================================
+function resetMetrics() {
+  if (!confirm('确定重置为默认 metric？这将清除所有自定义 metric。')) return;
+  localStorage.removeItem('deepeval_metrics');
+  MetricStore.reload();
+  initPresetMetrics();
+}
+
+function initPresetMetrics() {
+  if (MetricStore.getAll().length > 0) return; // 已有数据，不覆盖
+
+  // 从预置 JSON 文件加载
+  const presetFiles = [
+    'data/metrics/non_llm/json_schema.json',
+    'data/metrics/non_llm/latency.json',
+    'data/metrics/non_llm/context_length.json',
+    'data/metrics/non_llm/keyword_hit.json',
+    'data/metrics/non_llm/sentence_count.json',
+    'data/metrics/llm/accuracy.json',
+    'data/metrics/llm/completeness.json',
+    'data/metrics/llm/no_hallucination.json',
+  ];
+
+  Promise.all(presetFiles.map(f =>
+    fetch(f).then(r => r.json()).catch(() => null)
+  )).then(metrics => {
+    metrics.filter(Boolean).forEach(m => MetricStore.save(m));
+    renderMetricLibrary();
+    renderCanvas();
+  });
+}
+
+// ============================================================
+// Skill 导出
+// ============================================================
+function generateSkillCode() {
+  const customMetrics = [];
+  const gateInstances = [];
+  const scoreInstances = [];
+  const gateList = [];
+  const scoreList = [];
+
+  function processMetric(item, zone) {
+    const metric = MetricStore.getById(item.metricId);
+    if (!metric) return;
+
+    if (metric.category === 'non_llm') {
+      let code = metric.code_template;
+      (metric.params || []).forEach(p => {
+        const val = item.params[p.key] !== undefined ? item.params[p.key] : p.default;
+        code = code.replace(new RegExp(`\\{\\{${p.key}\\}\\}`, 'g'), formatCodeValue(val, p.type));
+      });
+      customMetrics.push(code);
+
+      const args = (metric.params || []).map(p => {
+        const val = item.params[p.key] !== undefined ? item.params[p.key] : p.default;
+        return `${p.key}=${formatCodeValue(val, p.type)}`;
+      }).join(', ');
+      const className = (metric.code_template.match(/class (\w+)\(/) || [])[1] || 'UnknownMetric';
+      const instance = `${className}(${args})`;
+      if (zone === 'gate') gateInstances.push(instance);
+      else scoreInstances.push(instance);
+    } else {
+      if (canvasGlobal.judgeMode === 'local_agent') {
+        const name = JSON.stringify(metric.name);
+        const criteria = JSON.stringify(metric.criteria || '');
+        const threshold = zone === 'gate' ? formatCodeValue(item.params['threshold'] || 0.7, 'number') : '0.0';
+        const agentCmd = JSON.stringify(canvasGlobal.agentCommand || 'claude');
+        const instance = `LocalAgentJudge(name=${name}, criteria=${criteria}, threshold=${threshold}, agent_cmd=${agentCmd})`;
+        if (zone === 'gate') gateInstances.push(instance);
+        else scoreInstances.push(instance);
+      } else {
+        let code = metric.code_template;
+        code = code.replace('{{criteria}}', metric.criteria || '');
+        (metric.params || []).forEach(p => {
+          const val = item.params[p.key] !== undefined ? item.params[p.key] : p.default;
+          code = code.replace(new RegExp(`\\{\\{${p.key}\\}\\}`, 'g'), formatCodeValue(val, p.type));
+        });
+        if (zone === 'gate') gateInstances.push(code);
+        else scoreInstances.push(code);
+      }
+    }
+  }
+
+  canvasGatePipeline.forEach((item, i) => {
+    const m = MetricStore.getById(item.metricId);
+    gateList.push(`${i + 1}. [门禁] ${m ? m.name : item.metricId}`);
+    processMetric(item, 'gate');
+  });
+  canvasScorePipeline.forEach((item, i) => {
+    const m = MetricStore.getById(item.metricId);
+    scoreList.push(`${i + 1}. [打分] ${m ? m.name : item.metricId} (权重=${(item.weight||0.3).toFixed(2)}, 严格度=${(item.strictness||1.0).toFixed(1)})`);
+    processMetric(item, 'score');
+  });
+
+  return {
+    customMetricsCode: [...new Set(customMetrics)].join('\n\n'),
+    gateInstances: gateInstances.join(',\n        '),
+    scoreInstances: scoreInstances.join(',\n        '),
+    scoreWeights: canvasScorePipeline.map(item => item.weight || 0.3),
+    scoreStrictness: canvasScorePipeline.map(item => item.strictness || 1.0),
+    gateCount: canvasGatePipeline.length,
+    scoreCount: canvasScorePipeline.length,
+    metricCount: canvasGatePipeline.length + canvasScorePipeline.length,
+    metricList: [...gateList, ...scoreList].join('\n'),
+  };
+}
+
+function formatCodeValue(val, type) {
+  if (type === 'json') {
+    if (typeof val === 'string') {
+      try { return JSON.stringify(JSON.parse(val)); } catch { return JSON.stringify(val); }
+    }
+    return JSON.stringify(val);
+  }
+  if (type === 'string') return JSON.stringify(String(val));
+  if (type === 'boolean') return val ? 'True' : 'False';
+  if (type === 'number') return String(Number(val));
+  return String(val);
+}
+
+async function renderExportTab() {
+  const container = document.getElementById('tab-export');
+  const code = generateSkillCode();
+
+  // 加载模板
+  const [skillTpl, scriptTpl] = await Promise.all([
+    fetch('templates/skill/SKILL.md.tpl').then(r => r.text()).catch(() => '# {{skillName}}\n\n...'),
+    fetch('templates/skill/eval_script.py.tpl').then(r => r.text()).catch(() => '# ...'),
+  ]);
+
+  const skillMd = skillTpl
+    .replaceAll('{{skillName}}', canvasGlobal.skillName)
+    .replaceAll('{{metricCount}}', code.metricCount)
+    .replaceAll('{{metricList}}', code.metricList);
+
+  const script = scriptTpl
+    .replaceAll('{{skillName}}', canvasGlobal.skillName)
+    .replaceAll('{{judgeMode}}', canvasGlobal.judgeMode)
+    .replaceAll('{{agentCommand}}', canvasGlobal.agentCommand || 'claude')
+    .replaceAll('{{modelBaseUrl}}', canvasGlobal.modelBaseUrl)
+    .replaceAll('{{modelId}}', canvasGlobal.modelId)
+    .replaceAll('{{customMetricsCode}}', code.customMetricsCode)
+    .replaceAll('{{gateInstances}}', code.gateInstances)
+    .replaceAll('{{scoreInstances}}', code.scoreInstances)
+    .replaceAll('{{scoreWeights}}', JSON.stringify(code.scoreWeights))
+    .replaceAll('{{scoreStrictness}}', JSON.stringify(code.scoreStrictness));
+
+  container.innerHTML = `
+    <div style="display:flex; flex-direction:column; gap:20px; width:100%;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2>导出 Skill</h2>
+        <button class="btn btn-primary" onclick="downloadSkillZip()" ${(canvasGatePipeline.length + canvasScorePipeline.length) === 0 ? 'disabled' : ''}>📥 下载 Skill Zip</button>
+      </div>
+
+      ${canvasPipeline.length === 0
+        ? '<div class="card"><p style="color:var(--text-secondary);">请先在 Canvas 编排中配置评测管线</p></div>'
+        : `<div class="card">
+            <h3>评测管线预览</h3>
+            <p style="color:var(--text-secondary);">共 ${code.metricCount} 个 metric</p>
+            <pre style="background:#1e293b; color:#e2e8f0; padding:16px; border-radius:8px; overflow:auto; font-size:13px;">${escapeHtml(code.metricList)}</pre>
+          </div>
+          <div class="card">
+            <h3>SKILL.md 预览</h3>
+            <pre id="skill-md-preview" style="background:#1e293b; color:#e2e8f0; padding:16px; border-radius:8px; overflow:auto; max-height:300px; font-size:13px;">${escapeHtml(skillMd)}</pre>
+          </div>
+          <div class="card">
+            <h3>eval_script.py 预览</h3>
+            <pre id="script-preview" style="background:#1e293b; color:#e2e8f0; padding:16px; border-radius:8px; overflow:auto; max-height:300px; font-size:13px;">${escapeHtml(script)}</pre>
+          </div>`
+      }
+    </div>
+  `;
+}
+
+async function downloadSkillZip() {
+  const code = generateSkillCode();
+  if (code.gateCount + code.scoreCount === 0) {
+    alert('请先在 Canvas 中添加 Metric');
+    return;
+  }
+
+  const [skillTpl, scriptTpl] = await Promise.all([
+    fetch('templates/skill/SKILL.md.tpl').then(r => r.text()).catch(() => '# {{skillName}}\n\n...'),
+    fetch('templates/skill/eval_script.py.tpl').then(r => r.text()).catch(() => '# ...'),
+  ]);
+
+  const skillMd = skillTpl
+    .replaceAll('{{skillName}}', canvasGlobal.skillName)
+    .replaceAll('{{metricCount}}', code.metricCount)
+    .replaceAll('{{metricList}}', code.metricList);
+
+  const script = scriptTpl
+    .replaceAll('{{skillName}}', canvasGlobal.skillName)
+    .replaceAll('{{judgeMode}}', canvasGlobal.judgeMode)
+    .replaceAll('{{agentCommand}}', canvasGlobal.agentCommand || 'claude')
+    .replaceAll('{{modelBaseUrl}}', canvasGlobal.modelBaseUrl)
+    .replaceAll('{{modelId}}', canvasGlobal.modelId)
+    .replaceAll('{{customMetricsCode}}', code.customMetricsCode)
+    .replaceAll('{{gateInstances}}', code.gateInstances)
+    .replaceAll('{{scoreInstances}}', code.scoreInstances)
+    .replaceAll('{{scoreWeights}}', JSON.stringify(code.scoreWeights))
+    .replaceAll('{{scoreStrictness}}', JSON.stringify(code.scoreStrictness));
+
+  const zip = new JSZip();
+  const folder = zip.folder(canvasGlobal.skillName);
+  folder.file('SKILL.md', skillMd);
+  folder.file('eval_script.py', script);
+  folder.file('requirements.txt', 'deepeval>=1.0.0\nopenai>=1.0.0\n');
+  folder.file('test_cases_template.json', JSON.stringify([
+    {"input": "示例问题", "actual_output": "模型输出", "expected_output": "期望输出"}
+  ], null, 2));
+
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${canvasGlobal.skillName}.zip`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// 页面初始化
+document.addEventListener('DOMContentLoaded', () => {
+  MetricStore.reload();
+  initPresetMetrics();
+  loadCanvasConfig();
+  renderMetricLibrary();
+  renderCanvas();
+  renderExportTab();
+});
+</script>
+</body>
+</html>
