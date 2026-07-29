@@ -926,35 +926,10 @@ function generateFieldEvalCode(fieldCodes) {
         print(f"  => ${fieldName} final score: {final}")`;
   }).join('\n\n');
 }
-    <div style="display:flex; flex-direction:column; gap:20px; width:100%;">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h2>导出 Skill</h2>
-        <button class="btn btn-primary" onclick="downloadSkillZip()" ${(canvasGatePipeline.length + canvasScorePipeline.length) === 0 ? 'disabled' : ''}>📥 下载 Skill Zip</button>
-      </div>
-
-      ${canvasPipeline.length === 0
-        ? '<div class="card"><p style="color:var(--text-secondary);">请先在 Canvas 编排中配置评测管线</p></div>'
-        : `<div class="card">
-            <h3>评测管线预览</h3>
-            <p style="color:var(--text-secondary);">共 ${code.metricCount} 个 metric</p>
-            <pre style="background:#1e293b; color:#e2e8f0; padding:16px; border-radius:8px; overflow:auto; font-size:13px;">${escapeHtml(code.metricList)}</pre>
-          </div>
-          <div class="card">
-            <h3>SKILL.md 预览</h3>
-            <pre id="skill-md-preview" style="background:#1e293b; color:#e2e8f0; padding:16px; border-radius:8px; overflow:auto; max-height:300px; font-size:13px;">${escapeHtml(skillMd)}</pre>
-          </div>
-          <div class="card">
-            <h3>eval_script.py 预览</h3>
-            <pre id="script-preview" style="background:#1e293b; color:#e2e8f0; padding:16px; border-radius:8px; overflow:auto; max-height:300px; font-size:13px;">${escapeHtml(script)}</pre>
-          </div>`
-      }
-    </div>
-  `;
-}
 
 async function downloadSkillZip() {
   const code = generateSkillCode();
-  if (code.gateCount + code.scoreCount === 0) {
+  if (canvasFields.every(f => (f.gatePipeline||[]).length + (f.scorePipeline||[]).length === 0)) {
     alert('请先在 Canvas 中添加 Metric');
     return;
   }
