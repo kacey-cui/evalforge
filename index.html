@@ -94,8 +94,6 @@ let canvasGlobal = {
   modelBaseUrl: 'https://your-model-gateway.example.com/v1',
   modelId: '',
   skillName: 'my-eval-skill',
-  judgeMode: 'api',
-  agentCommand: 'claude',
 };
 
 // ============================================================
@@ -826,22 +824,13 @@ function generateSkillCode() {
         if (zone === 'gate') gateParts.push(`${className}(${args})`);
         else scoreParts.push(`${className}(${args})`);
       } else {
-        if (canvasGlobal.judgeMode === 'local_agent') {
-          const name = JSON.stringify(metric.name);
-          const criteria = JSON.stringify(metric.criteria || '');
-          const threshold = zone === 'gate' ? formatCodeValue(item.params['threshold'] || 0.7, 'number') : '0.0';
-          const agentCmd = JSON.stringify(canvasGlobal.agentCommand || 'claude');
-          const inst = `LocalAgentJudge(name=${name}, criteria=${criteria}, threshold=${threshold}, agent_cmd=${agentCmd})`;
-          if (zone === 'gate') gateParts.push(inst); else scoreParts.push(inst);
-        } else {
-          let code = metric.code_template;
-          code = code.replace('{{criteria}}', metric.criteria || '');
-          (metric.params || []).forEach(p => {
-            const val = item.params[p.key] !== undefined ? item.params[p.key] : p.default;
-            code = code.replace(new RegExp(`\\{\\{${p.key}\\}\\}`, 'g'), formatCodeValue(val, p.type));
-          });
-          if (zone === 'gate') gateParts.push(code); else scoreParts.push(code);
-        }
+        let code = metric.code_template;
+        code = code.replace('{{criteria}}', metric.criteria || '');
+        (metric.params || []).forEach(p => {
+          const val = item.params[p.key] !== undefined ? item.params[p.key] : p.default;
+          code = code.replace(new RegExp(`\\{\\{${p.key}\\}\\}`, 'g'), formatCodeValue(val, p.type));
+        });
+        if (zone === 'gate') gateParts.push(code); else scoreParts.push(code);
       }
     }
 
@@ -903,8 +892,6 @@ async function renderExportTab() {
 
   const script = scriptTpl
     .replaceAll('{{skillName}}', canvasGlobal.skillName)
-    .replaceAll('{{judgeMode}}', canvasGlobal.judgeMode)
-    .replaceAll('{{agentCommand}}', canvasGlobal.agentCommand || 'claude')
     .replaceAll('{{modelBaseUrl}}', canvasGlobal.modelBaseUrl)
     .replaceAll('{{modelId}}', canvasGlobal.modelId)
     .replaceAll('{{customMetricsCode}}', code.customMetricsCode)
@@ -914,20 +901,7 @@ async function renderExportTab() {
     <div style="display:flex; flex-direction:column; gap:20px; width:100%;">
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <h2>导出 Skill</h2>
-        <div style="display:flex; gap:8px; align-items:center;">
-          <div>
-            <label style="font-size:12px;">评委模式</label>
-            <select id="export-judge-mode" onchange="canvasGlobal.judgeMode=this.value;saveCanvasConfig();renderExportTab();" style="padding:6px;border:1px solid var(--border);border-radius:4px;font-size:13px;">
-              <option value="api" ${canvasGlobal.judgeMode==='api'?'selected':''}>API 调用</option>
-              <option value="local_agent" ${canvasGlobal.judgeMode==='local_agent'?'selected':''}>本地 Agent</option>
-            </select>
-          </div>
-          <div id="export-agent-fields" ${canvasGlobal.judgeMode!=='local_agent'?'style="display:none;"':''}>
-            <label style="font-size:12px;">Agent CLI</label>
-            <input id="export-agent-cmd" value="${escapeHtml(canvasGlobal.agentCommand)}" onchange="canvasGlobal.agentCommand=this.value;saveCanvasConfig();" placeholder="claude" style="width:120px;padding:6px;border:1px solid var(--border);border-radius:4px;font-size:13px;">
-          </div>
-          <button class="btn btn-primary" onclick="downloadSkillZip()" ${canvasFields.every(f=>(f.gatePipeline||[]).length+(f.scorePipeline||[]).length===0)?'disabled':''}>📥 下载 Skill Zip</button>
-        </div>
+        <button class="btn btn-primary" onclick="downloadSkillZip()" ${canvasFields.every(f=>(f.gatePipeline||[]).length+(f.scorePipeline||[]).length===0)?'disabled':''}>📥 下载 Skill Zip</button>
       </div>
       <div class="card"><h3>评测管线预览</h3><pre style="background:#1e293b;color:#e2e8f0;padding:16px;border-radius:8px;overflow:auto;font-size:13px;">${escapeHtml(code.metricList)}</pre></div>
       <div class="card"><h3>eval_script.py 预览</h3><pre style="background:#1e293b;color:#e2e8f0;padding:16px;border-radius:8px;overflow:auto;max-height:300px;font-size:13px;">${escapeHtml(script)}</pre></div>
@@ -980,8 +954,6 @@ async function downloadSkillZip() {
 
   const script = scriptTpl
     .replaceAll('{{skillName}}', canvasGlobal.skillName)
-    .replaceAll('{{judgeMode}}', canvasGlobal.judgeMode)
-    .replaceAll('{{agentCommand}}', canvasGlobal.agentCommand || 'claude')
     .replaceAll('{{modelBaseUrl}}', canvasGlobal.modelBaseUrl)
     .replaceAll('{{modelId}}', canvasGlobal.modelId)
     .replaceAll('{{customMetricsCode}}', code.customMetricsCode)
