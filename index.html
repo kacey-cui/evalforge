@@ -90,6 +90,7 @@ label { font-size: 12px; color: var(--text-secondary); display: block; margin-bo
 // ============================================================
 // canvasFields: [{ name: "字段名", gatePipeline: [...], scorePipeline: [...] }]
 let canvasFields = [];
+let canvasActiveField = 0;  // 当前选中的字段 index
 let canvasGlobal = {
   modelBaseUrl: 'https://your-model-gateway.example.com/v1',
   modelId: '',
@@ -145,12 +146,14 @@ function saveCanvasConfig() {
   canvasGlobal.modelId = document.getElementById('cfg-model-id')?.value || canvasGlobal.modelId;
   canvasGlobal.skillName = document.getElementById('cfg-skill-name')?.value || canvasGlobal.skillName;
   localStorage.setItem('deepeval_canvas_fields', JSON.stringify(canvasFields));
+  localStorage.setItem('deepeval_canvas_active', canvasActiveField);
   localStorage.setItem('deepeval_canvas_global', JSON.stringify(canvasGlobal));
 }
 
 function loadCanvasConfig() {
   try {
     canvasFields = JSON.parse(localStorage.getItem('deepeval_canvas_fields')) || [];
+    canvasActiveField = parseInt(localStorage.getItem('deepeval_canvas_active')) || 0;
     canvasGlobal = JSON.parse(localStorage.getItem('deepeval_canvas_global')) || canvasGlobal;
   } catch { /* use defaults */ }
   if (canvasFields.length === 0) {
@@ -426,11 +429,19 @@ function renderCanvas() {
 
       <!-- 中间 Canvas -->
       <div style="flex:1; display:flex; flex-direction:column; gap:16px; overflow:auto;">
-        <!-- 字段区域 -->
-        <div id="fields-container" style="display:flex; flex-direction:column; gap:16px;">
-          ${canvasFields.map((field, fi) => renderFieldSection(field, fi)).join('')}
+        <!-- 字段标签栏 -->
+        <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; padding-bottom:8px; border-bottom:2px solid var(--border);">
+          ${canvasFields.map((field, fi) => `
+            <div onclick="switchField(${fi})" style="cursor:pointer; padding:6px 14px; border-radius:20px; font-size:13px; font-weight:${fi===canvasActiveField?'600':'400'}; background:${fi===canvasActiveField?'var(--primary)':'var(--bg)'}; color:${fi===canvasActiveField?'#fff':'var(--text)'}; border:1px solid ${fi===canvasActiveField?'var(--primary)':'var(--border)'}; display:flex; align-items:center; gap:6px;">
+              ${field.name || '(全量)'}
+              <span onclick="event.stopPropagation(); deleteField(${fi})" style="font-size:10px; opacity:0.6; cursor:pointer;" title="删除字段">✕</span>
+            </div>
+          `).join('')}
+          <button class="btn btn-ghost" onclick="addField()" style="padding:6px 12px; font-size:12px; border-radius:20px;">+ 新建</button>
         </div>
-        <button class="btn btn-ghost" onclick="addField()" style="align-self:start;">+ 新建字段</button>
+
+        <!-- 当前字段的内容 -->
+        ${renderFieldSection(canvasFields[canvasActiveField] || { name: '', gatePipeline: [], scorePipeline: [] }, canvasActiveField)}
 
         <!-- 全局配置（精简版，无评委模式） -->
         <div class="card">
@@ -559,8 +570,10 @@ function renderPipelineCard(item, idx, fieldIdx, zone) {
 }
 
 // --- 字段管理 ---
+function switchField(fi) { canvasActiveField = fi; saveCanvasConfig(); renderCanvas(); }
 function addField() {
   canvasFields.push({ name: '', gatePipeline: [], scorePipeline: [] });
+  canvasActiveField = canvasFields.length - 1;
   saveCanvasConfig();
   renderCanvas();
 }
@@ -568,6 +581,7 @@ function renameField(fi, name) { canvasFields[fi].name = name; saveCanvasConfig(
 function deleteField(fi) {
   if (canvasFields.length <= 1) { alert('至少保留一个字段'); return; }
   canvasFields.splice(fi, 1);
+  if (canvasActiveField >= canvasFields.length) canvasActiveField = canvasFields.length - 1;
   saveCanvasConfig(); renderCanvas();
 }
 function equalizeWeights(fi) {
