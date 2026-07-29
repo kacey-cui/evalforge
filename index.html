@@ -589,10 +589,12 @@ function copyField(fi) {
 
 // --- 拖拽 ---
 let _dragMetricId = null;
+let _isReorderDrag = false;
 function onMetricDragStart(e) {
   const el = e.target.closest('[data-metric-id]');
   if (el) {
     _dragMetricId = el.dataset.metricId;
+    _isReorderDrag = false;
     e.dataTransfer.setData('text/plain', _dragMetricId);
     e.dataTransfer.effectAllowed = 'copy';
     el.style.opacity = '0.5';
@@ -605,9 +607,10 @@ function onFieldZoneDrop(e, fi, zone) {
   e.preventDefault(); e.stopPropagation();
   const el = e.currentTarget;
   el.classList.remove('drag-over');
+  if (_isReorderDrag) return;
   const metricId = _dragMetricId || e.dataTransfer.getData('text/plain');
   _dragMetricId = null;
-  if (!metricId || metricId.startsWith('reorder-')) return;
+  if (!metricId) return;
   const metric = MetricStore.getById(metricId);
   if (!metric) return;
   const field = canvasFields[fi];
@@ -617,20 +620,34 @@ function onFieldZoneDrop(e, fi, zone) {
   const newItem = { metricId, params: defaultParams, order: pipeline.length };
   if (zone === 'score') { newItem.weight = 0.3; newItem.strictness = 1.0; }
   pipeline.push(newItem);
+  if (zone === 'score' && pipeline.length > 1) {
+    const w = Math.round(100 / pipeline.length) / 100;
+    let sum = 0;
+    pipeline.forEach((it, i) => {
+      it.weight = i === pipeline.length - 1 ? Math.round((1 - sum) * 100) / 100 : w;
+      sum += it.weight;
+    });
+  }
   saveCanvasConfig(); renderCanvas();
 }
 function onPipelineCardDragStart(e) {
   e.stopPropagation();
   const el = e.target.closest('[data-field-idx]');
   if (!el) return;
+  _isReorderDrag = true;
+  _dragMetricId = null;
   e.dataTransfer.setData('text/plain', `reorder-${el.dataset.fieldIdx}-${el.dataset.zone}-${el.dataset.idx}`);
   e.dataTransfer.effectAllowed = 'move';
 }
-function onPipelineCardDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
+function onPipelineCardDragOver(e) {
+  if (_isReorderDrag) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
+}
 function onPipelineCardDrop(e, fi, zone) {
+  if (!_isReorderDrag) return; // 不是排序，冒泡给父级
   e.preventDefault(); e.stopPropagation();
+  _isReorderDrag = false;
   const data = e.dataTransfer.getData('text/plain');
-  if (!data || !data.startsWith('reorder-')) return;
+  if (!data) return;
   const parts = data.replace('reorder-', '').split('-');
   const fromFi = parseInt(parts[0]), fromZone = parts[1], fromIdx = parseInt(parts[2]);
   const toEl = e.target.closest('[data-idx]');
