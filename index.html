@@ -63,7 +63,7 @@ label { font-size: 12px; color: var(--text-secondary); display: block; margin-bo
 .metric-source:active { cursor: grabbing; }
 .pipeline-item { cursor: grab; border-left: 3px solid var(--primary); }
 .pipeline-item:active { cursor: grabbing; }
-#canvas-drop-zone.drag-over { border-color: var(--primary); background: var(--primary-light); }
+.drag-over { border-color: var(--primary) !important; background: var(--primary-light) !important; }
 
 /* 预置标签 */
 .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; }
@@ -498,7 +498,7 @@ function renderFieldSection(field, fi) {
              ondragleave="onFieldZoneDragLeave(event)"
              ondrop="onFieldZoneDrop(event, ${fi}, 'gate')"
              style="border:1px dashed #fca5a5; border-radius:var(--radius);
-                    padding:8px; min-height:44px; background:#fef2f2;
+                    padding:16px; min-height:100px; background:#fef2f2;
                     display:flex; flex-direction:column; gap:4px;">
           ${gateItems.length === 0
             ? '<div style="text-align:center; color:#f87171; font-size:12px; padding:8px 0;">拖入门禁 Metric</div>'
@@ -515,7 +515,7 @@ function renderFieldSection(field, fi) {
              ondragleave="onFieldZoneDragLeave(event)"
              ondrop="onFieldZoneDrop(event, ${fi}, 'score')"
              style="border:1px dashed #86efac; border-radius:var(--radius);
-                    padding:8px; min-height:44px; background:#f0fdf4;
+                    padding:16px; min-height:100px; background:#f0fdf4;
                     display:flex; flex-direction:column; gap:4px;">
           ${scoreItems.length === 0
             ? '<div style="text-align:center; color:#4ade80; font-size:12px; padding:8px 0;">拖入打分 Metric</div>'
@@ -523,11 +523,12 @@ function renderFieldSection(field, fi) {
           }
         </div>
         ${scoreItems.length > 0 ? `
-          <div style="margin-top:4px; padding:4px 8px; background:var(--primary-light); border-radius:4px; font-size:11px; color:var(--primary);">
-            加权 = ${scoreItems.map((it, i) => {
+          <div style="margin-top:4px; padding:4px 8px; background:var(--primary-light); border-radius:4px; font-size:11px; color:var(--primary); display:flex; justify-content:space-between; align-items:center;">
+            <span>加权 = ${scoreItems.map((it) => {
               const m = MetricStore.getById(it.metricId);
               return `<strong>${(it.weight||0.3).toFixed(2)}×${m?m.name:'?'}</strong>`;
-            }).join(' + ')}
+            }).join(' + ')}</span>
+            <button class="btn btn-ghost" style="padding:1px 6px; font-size:10px;" onclick="event.stopPropagation(); equalizeWeights(${fi})">均分</button>
           </div>` : ''}
       </div>
     </div>`;
@@ -571,6 +572,13 @@ function deleteField(fi) {
   canvasFields.splice(fi, 1);
   saveCanvasConfig(); renderCanvas();
 }
+function equalizeWeights(fi) {
+  const items = canvasFields[fi].scorePipeline || [];
+  if (items.length === 0) return;
+  const w = 1 / items.length;
+  items.forEach(it => { it.weight = Math.round(w * 100) / 100; });
+  saveCanvasConfig(); renderCanvas();
+}
 function copyField(fi) {
   const src = canvasFields[fi];
   const clone = JSON.parse(JSON.stringify(src));
@@ -581,8 +589,13 @@ function copyField(fi) {
 
 // --- 拖拽 ---
 function onMetricDragStart(e) {
-  const id = e.target.closest('[data-metric-id]')?.dataset.metricId;
-  if (id) { e.dataTransfer.setData('text/plain', id); e.dataTransfer.effectAllowed = 'copy'; }
+  const el = e.target.closest('[data-metric-id]');
+  if (el) {
+    e.dataTransfer.setData('text/plain', el.dataset.metricId);
+    e.dataTransfer.effectAllowed = 'copy';
+    el.style.opacity = '0.5';
+    setTimeout(() => { if (el) el.style.opacity = '1'; }, 0);
+  }
 }
 function onFieldZoneDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
 function onFieldZoneDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
