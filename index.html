@@ -192,7 +192,8 @@ function renderMetricLibrary() {
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <h2>Metric 模板库</h2>
         <div style="display:flex; gap:8px;">
-          <button class="btn btn-ghost" onclick="resetMetrics()" style="font-size:12px;">🔄 重置为默认</button>
+          <button class="btn btn-ghost" onclick="refreshMetrics()" style="font-size:12px;">🔄 刷新</button>
+          <button class="btn btn-ghost" onclick="resetMetrics()" style="font-size:12px;">↺ 重置</button>
           <button class="btn btn-primary" onclick="showMetricForm()">+ 新建 Metric</button>
         </div>
       </div>
@@ -776,6 +777,29 @@ function renderParamInput(param, value, zone, pipelineIndex) {
 // ============================================================
 // 预置 Metric 初始化
 // ============================================================
+async function refreshMetrics() {
+  // 从 data/metrics/ 目录重新加载所有 JSON 文件
+  const presetFiles = [
+    'data/metrics/non_llm/json_schema.json',
+    'data/metrics/non_llm/latency.json',
+    'data/metrics/non_llm/context_length.json',
+    'data/metrics/non_llm/keyword_hit.json',
+    'data/metrics/non_llm/sentence_count.json',
+    'data/metrics/llm/accuracy.json',
+    'data/metrics/llm/completeness.json',
+    'data/metrics/llm/no_hallucination.json',
+  ];
+  const results = await Promise.all(presetFiles.map(f =>
+    fetch(f).then(r => r.json()).catch(() => null)
+  ));
+  const loaded = results.filter(Boolean);
+  // 更新已有 metric，添加新 metric
+  loaded.forEach(m => MetricStore.save(m));
+  renderMetricLibrary();
+  renderCanvas();
+  alert(`已刷新，加载 ${loaded.length} 个 metric`);
+}
+
 function resetMetrics() {
   if (!confirm('确定重置为默认 metric？这将清除所有自定义 metric。')) return;
   localStorage.removeItem('deepeval_metrics');
