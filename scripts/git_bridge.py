@@ -281,6 +281,83 @@ def delete_run(run_id):
     return jsonify({"ok": True, "tag": tag})
 
 
+# ─── 项目级端点 ──────────────────────────────────────────────────────────────
+
+@app.route("/api/projects/<project>/metrics", methods=["GET", "OPTIONS"])
+def project_metrics(project):
+    """GET /api/projects/<project>/metrics — 列出项目下所有 metric JSON"""
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    metrics = []
+    for subdir in ["non_llm", "llm", ""]:
+        search_dir = REPO_ROOT / "data" / "projects" / project / "metrics"
+        if subdir:
+            search_dir = search_dir / subdir
+        if not search_dir.exists():
+            continue
+        for f in sorted(search_dir.glob("*.json")):
+            try:
+                data = json.loads(f.read_text("utf-8"))
+                if "id" in data:
+                    metrics.append(data)
+            except Exception:
+                pass
+
+    return jsonify(metrics)
+
+
+@app.route("/api/projects/<project>/canvas", methods=["GET", "OPTIONS"])
+def project_canvas_get(project):
+    """GET /api/projects/<project>/canvas — 读取 canvas.json"""
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    canvas_path = REPO_ROOT / "data" / "projects" / project / "canvas.json"
+    if not canvas_path.exists():
+        return jsonify({"error": "canvas.json not found"}), 404
+
+    try:
+        return jsonify(json.loads(canvas_path.read_text("utf-8")))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/projects/<project>/canvas", methods=["POST"])
+def project_canvas_post(project):
+    """POST /api/projects/<project>/canvas — 写入 canvas.json"""
+    canvas_path = REPO_ROOT / "data" / "projects" / project / "canvas.json"
+    canvas_path.parent.mkdir(parents=True, exist_ok=True)
+
+    body = request.get_json(force=True, silent=True)
+    if not body:
+        return jsonify({"error": "empty body"}), 400
+
+    canvas_path.write_text(json.dumps(body, ensure_ascii=False, indent=4), "utf-8")
+    return jsonify({"ok": True, "path": str(canvas_path.relative_to(REPO_ROOT))})
+
+
+@app.route("/api/projects/<project>/report", methods=["GET", "OPTIONS"])
+def project_latest_report(project):
+    """GET /api/projects/<project>/report — 返回该项目最近一次 Run 的 results.json"""
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    runs = _run_ids_from_log(project_filter=project)
+    if not runs:
+        return jsonify({"error": "no runs found"}), 404
+
+    latest_run_id = runs[0]["run_id"]
+    results_path = REPO_ROOT / "data" / "runs" / latest_run_id / "results.json"
+    if not results_path.exists():
+        return jsonify({"error": f"results.json not found for {latest_run_id}"}), 404
+
+    try:
+        return jsonify(json.loads(results_path.read_text("utf-8")))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 # ─── 启动 ────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
