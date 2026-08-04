@@ -1,4 +1,32 @@
 #!/bin/bash
 cd "$(dirname "$0")"
-echo "Starting server at http://localhost:8080"
-python3 -m http.server 8080
+
+# 清理已有进程
+echo "清理旧进程..."
+kill $(lsof -ti:8080) 2>/dev/null || true
+kill $(lsof -ti:8081) 2>/dev/null || true
+sleep 1
+
+# 启动 git_bridge（端口 8081）
+echo "启动 git_bridge on http://localhost:8081"
+python3 scripts/git_bridge.py &
+GIT_BRIDGE_PID=$!
+
+# 等待 git_bridge 就绪
+sleep 1
+
+# 启动静态文件服务（端口 8080）
+echo "启动静态服务 on http://localhost:8080"
+python3 -m http.server 8080 &
+STATIC_PID=$!
+
+echo ""
+echo "✅ EvalPlatform 已启动"
+echo "   UI:         http://localhost:8080"
+echo "   Git Bridge: http://localhost:8081"
+echo ""
+echo "按 Ctrl+C 停止所有服务"
+
+# 等待 Ctrl+C，然后清理
+trap "echo '停止服务...'; kill $GIT_BRIDGE_PID $STATIC_PID 2>/dev/null" INT TERM
+wait
