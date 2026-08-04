@@ -80,13 +80,19 @@ label { font-size: 12px; color: var(--text-secondary); display: block; margin-bo
     <button class="btn btn-ghost" style="padding:2px 8px; font-size:11px;" onclick="deleteProject()" title="删除当前项目">🗑️</button>
   </div>
   <nav id="tabs">
+    <button class="tab" data-tab="overview">🏠 概览</button>
     <button class="tab active" data-tab="metrics">📦 Metric 库</button>
     <button class="tab" data-tab="canvas">🎨 Canvas 编排</button>
     <button class="tab" data-tab="export">📥 导出 Skill</button>
+    <button class="tab" data-tab="history">🕐 Run 历史</button>
+    <button class="tab" data-tab="compare">🔀 对比</button>
   </nav>
+  <div id="tab-overview" class="tab-content"></div>
   <div id="tab-metrics" class="tab-content active"></div>
   <div id="tab-canvas" class="tab-content"></div>
   <div id="tab-export" class="tab-content"></div>
+  <div id="tab-history" class="tab-content"></div>
+  <div id="tab-compare" class="tab-content"></div>
 </div>
 <div id="metric-form-overlay"></div>
 
@@ -171,9 +177,12 @@ document.querySelectorAll('.tab').forEach(btn => {
     document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
     // 切换时重新渲染
     const tabName = btn.dataset.tab;
+    if (tabName === 'overview') renderOverview();
     if (tabName === 'metrics') renderMetricLibrary();
     if (tabName === 'canvas') renderCanvas();
     if (tabName === 'export') renderExportTab();
+    if (tabName === 'history') renderHistory();
+    if (tabName === 'compare') renderCompare();
   });
 });
 
@@ -1059,6 +1068,121 @@ function deleteProject() {
   renderMetricLibrary();
   renderCanvas();
   renderExportTab();
+}
+
+// ============================================================
+// 概览 Tab
+// ============================================================
+const GIT_BRIDGE = 'http://localhost:8081';
+
+async function _fetchBridge(path) {
+  try {
+    const res = await fetch(GIT_BRIDGE + path);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+async function renderOverview() {
+  const container = document.getElementById('tab-overview');
+  container.style.flexDirection = 'column';
+  container.style.gap = '20px';
+  container.innerHTML = `<div style="color:var(--text-secondary); padding:20px;">⏳ 加载中...</div>`;
+
+  // 读取最近 Run
+  const runs = await _fetchBridge(`/api/runs?project=${encodeURIComponent(currentProject)}`);
+  const latestRun = runs && runs.length > 0 ? runs[0] : null;
+
+  // 读取当前 Canvas 摘要
+  const fields = canvasFields || [];
+  const totalMetrics = fields.reduce(
+    (acc, f) => acc + (f.gatePipeline || []).length + (f.scorePipeline || []).length, 0
+  );
+
+  const statusColors = { pass: 'var(--success)', fail: 'var(--danger)', partial: '#f59e0b' };
+  const statusIcons = { pass: '✅', fail: '❌', partial: '⚠️' };
+
+  container.innerHTML = `
+    <div style="display:flex; flex-direction:column; gap:20px; width:100%;">
+      <h2>🏠 概览 — ${currentProject}</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+
+        <!-- 当前 Canvas 摘要 -->
+        <div class="card">
+          <h3 style="margin-bottom:12px;">当前编排配置</h3>
+          ${fields.length === 0 ? '<p style="color:var(--text-secondary)">尚未配置字段，去 Canvas 编排开始吧。</p>' : `
+            <p style="font-size:13px; color:var(--text-secondary); margin-bottom:8px;">
+              ${fields.length} 个字段 · ${totalMetrics} 个 Metric
+            </p>
+            ${fields.map(f => `
+              <div style="padding:8px; background:var(--bg); border-radius:6px; margin-bottom:6px;">
+                <strong>${f.name || '(未命名)'}</strong>
+                <span style="font-size:11px; color:var(--text-secondary); margin-left:8px;">
+                  门禁 ${(f.gatePipeline||[]).length} · 打分 ${(f.scorePipeline||[]).length}
+                </span>
+              </div>
+            `).join('')}
+          `}
+          <button class="btn btn-ghost" style="margin-top:12px; font-size:13px;"
+            onclick="document.querySelector('[data-tab=canvas]').click()">
+            去 Canvas 编排 →
+          </button>
+        </div>
+
+        <!-- 最近 Run + 快捷操作 -->
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <div class="card">
+            <h3 style="margin-bottom:12px;">最近一次 Run</h3>
+            ${latestRun ? `
+              <div style="display:flex; flex-direction:column; gap:6px;">
+                <div style="font-size:13px;">
+                  <span style="color:var(--text-secondary);">Run ID:</span>
+                  <code>${latestRun.run_id}</code>
+                </div>
+                <div style="font-size:13px;">
+                  <span style="color:var(--text-secondary);">时间:</span>
+                  ${latestRun.timestamp ? latestRun.timestamp.slice(0,19).replace('T',' ') : 'N/A'}
+                </div>
+                <div style="font-size:13px;">
+                  <span style="color:var(--text-secondary);">总分:</span>
+                  <strong>${latestRun.overall_score != null ? latestRun.overall_score.toFixed(4) : 'N/A'}</strong>
+                </div>
+                <div style="font-size:13px;">
+                  <span style="color:var(--text-secondary);">状态:</span>
+                  <span style="color:${statusColors[latestRun.status] || 'inherit'}">
+                    ${statusIcons[latestRun.status] || '?'} ${latestRun.status}
+                  </span>
+                </div>
+                <div style="font-size:13px;">
+                  <span style="color:var(--text-secondary);">触发:</span>
+                  ${latestRun.triggered_by === 'agent' ? '🤖 Agent' : '🖱️ UI'}
+                </div>
+              </div>
+            ` : `<p style="color:var(--text-secondary); font-size:13px;">暂无 Run 历史</p>`}
+          </div>
+          <div class="card">
+            <h3 style="margin-bottom:12px;">快捷操作</h3>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <button class="btn btn-ghost" style="text-align:left;"
+                onclick="document.querySelector('[data-tab=history]').click()">
+                🕐 查看完整 Run 历史
+              </button>
+              <button class="btn btn-ghost" style="text-align:left;"
+                onclick="document.querySelector('[data-tab=compare]').click()">
+                🔀 对比视图
+              </button>
+              <button class="btn btn-ghost" style="text-align:left;"
+                onclick="document.querySelector('[data-tab=export]').click()">
+                📥 导出 Skill
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 // 页面初始化
