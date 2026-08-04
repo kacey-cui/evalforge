@@ -86,6 +86,7 @@ label { font-size: 12px; color: var(--text-secondary); display: block; margin-bo
     <button class="tab" data-tab="export">📥 导出 Skill</button>
     <button class="tab" data-tab="history">🕐 Run 历史</button>
     <button class="tab" data-tab="compare">🔀 对比</button>
+    <button class="tab" data-tab="report">📊 报告</button>
   </nav>
   <div id="tab-overview" class="tab-content"></div>
   <div id="tab-metrics" class="tab-content active"></div>
@@ -93,6 +94,7 @@ label { font-size: 12px; color: var(--text-secondary); display: block; margin-bo
   <div id="tab-export" class="tab-content"></div>
   <div id="tab-history" class="tab-content"></div>
   <div id="tab-compare" class="tab-content"></div>
+  <div id="tab-report" class="tab-content"></div>
 </div>
 <div id="metric-form-overlay"></div>
 
@@ -183,6 +185,7 @@ document.querySelectorAll('.tab').forEach(btn => {
     if (tabName === 'export') renderExportTab();
     if (tabName === 'history') renderHistory();
     if (tabName === 'compare') renderCompare();
+    if (tabName === 'report') renderReport();
   });
 });
 
@@ -202,6 +205,7 @@ function renderMetricLibrary() {
         <div style="display:flex; gap:8px;">
           <button class="btn btn-ghost" onclick="refreshMetrics()" style="font-size:12px;">🔄 刷新</button>
           <button class="btn btn-ghost" onclick="resetMetrics()" style="font-size:12px;">↺ 重置</button>
+          <button class="btn btn-ghost" onclick="importProjectMetrics()" style="font-size:12px;">📂 从项目导入</button>
           <button class="btn btn-primary" onclick="showMetricForm()">+ 新建 Metric</button>
         </div>
       </div>
@@ -217,6 +221,81 @@ function renderMetricLibrary() {
       </div>
     </div>
   `;
+}
+
+async function importProjectMetrics() {
+  const metrics = await _fetchBridge(`/api/projects/${encodeURIComponent(currentProject)}/metrics`);
+  if (!metrics || !Array.isArray(metrics) || metrics.length === 0) {
+    alert(`📂 项目 "${currentProject}" 没有找到文件系统 Metrics。\n\n请确认 data/projects/${currentProject}/metrics/ 目录下有 JSON 文件，且 git_bridge 正在运行（端口 8081）。`);
+    return;
+  }
+
+  let imported = 0;
+  let skipped = 0;
+  for (const m of metrics) {
+    if (!m.id) { skipped++; continue; }
+    const existing = MetricStore.getById(m.id);
+    if (existing) {
+      // 已存在：覆盖
+      MetricStore.save(m);
+      imported++;
+    } else {
+      MetricStore.save(m);
+      imported++;
+    }
+  }
+
+  alert(`✅ 导入完成\n导入: ${imported} 个 Metric\n跳过: ${skipped} 个（格式不合法）`);
+  renderMetricLibrary();
+}
+
+async function loadCanvasFromFile() {
+  const canvas = await _fetchBridge(`/api/projects/${encodeURIComponent(currentProject)}/canvas`);
+  if (!canvas || canvas.error) {
+    alert(`📂 未找到 data/projects/${currentProject}/canvas.json\n\n请先用 Agent 生成 canvas.json，或在 Canvas 编排里配置后点"保存到文件"。`);
+    return;
+  }
+
+  // 把文件系统的 canvas 合并进 UI 状态
+  if (canvas.fields && Array.isArray(canvas.fields)) {
+    canvasFields = canvas.fields;
+  }
+  if (canvas.global) {
+    canvasGlobal = { ...canvasGlobal, ...canvas.global };
+  }
+  canvasActiveField = 0;
+
+  // 持久化到 localStorage
+  saveCanvasConfig();
+
+  alert(`✅ 已从文件系统加载 Canvas 配置\n字段数: ${canvasFields.length}`);
+  renderCanvas();
+}
+
+async function saveCanvasToFile() {
+  // 先从 UI 读取当前配置
+  saveCanvasConfig();
+
+  const payload = {
+    fields: canvasFields,
+    global: canvasGlobal,
+  };
+
+  try {
+    const res = await fetch(`${GIT_BRIDGE}/api/projects/${encodeURIComponent(currentProject)}/canvas`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) {
+      const result = await res.json();
+      alert(`✅ 已保存到文件系统: ${result.path}`);
+    } else {
+      alert('❌ 保存失败，请确认 git_bridge 正在运行');
+    }
+  } catch (e) {
+    alert('❌ 连接 git_bridge 失败（端口 8081）。请先运行 bash serve.sh');
+  }
 }
 
 function metricCard(m) {
@@ -447,6 +526,11 @@ function renderCanvas() {
             </div>
           `).join('')}
           <button class="btn btn-ghost" onclick="addField()" style="padding:6px 12px; font-size:12px; border-radius:20px;">+ 新建</button>
+        </div>
+
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding-bottom:8px;">
+          <button class="btn btn-ghost" style="font-size:12px;" onclick="loadCanvasFromFile()">📂 从文件加载</button>
+          <button class="btn btn-ghost" style="font-size:12px;" onclick="saveCanvasToFile()">💾 保存到文件</button>
         </div>
 
         <!-- 当前字段的内容 -->
@@ -1580,6 +1664,327 @@ async function _runDiff() {
       </div>
     </div>
   `;
+}
+
+// ============================================================
+// 📊 报告 Tab — SVG 图表渲染器
+// ============================================================
+
+// ── SVG 工具 ────────────────────────────────────────────────
+
+function _svgChart(chart, width, height) {
+  if (chart.type === 'line') return _svgLine(chart, width, height);
+  if (chart.type === 'bar') return _svgBar(chart, width, height);
+  if (chart.type === 'histogram') return _svgHistogram(chart, width, height);
+  return `<p style="color:var(--text-secondary);">未知图表类型: ${chart.type}</p>`;
+}
+
+function _svgLine(chart, W, H) {
+  const PAD = { top: 40, right: 20, bottom: 55, left: 55 };
+  const cW = W - PAD.left - PAD.right;
+  const cH = H - PAD.top - PAD.bottom;
+  const yMin = chart.y_min ?? 0;
+  const yMax = chart.y_max ?? 1;
+
+  const allX = chart.series.flatMap(s => s.points.map(p => p.x));
+  const xMin = Math.min(...allX);
+  const xMax = Math.max(...allX);
+  const xRange = xMax - xMin || 1;
+
+  const sx = v => ((v - xMin) / xRange) * cW;
+  const sy = v => cH - ((v - yMin) / (yMax - yMin)) * cH;
+
+  // grid + y-axis ticks
+  const yTicks = [0, 0.2, 0.4, 0.6, 0.8, 1.0].filter(v => v >= yMin && v <= yMax);
+  const gridLines = yTicks.map(v =>
+    `<line x1="0" y1="${sy(v).toFixed(1)}" x2="${cW}" y2="${sy(v).toFixed(1)}" stroke="#f0f0f0" stroke-dasharray="3,3"/>
+     <text x="-8" y="${(sy(v)+4).toFixed(1)}" text-anchor="end" font-size="11" fill="#94a3b8">${v.toFixed(1)}</text>`
+  ).join('');
+
+  // series lines + dots
+  const seriesEls = chart.series.map(s => {
+    const pts = s.points.map(p => `${sx(p.x).toFixed(1)},${sy(p.y).toFixed(1)}`).join(' ');
+    const dots = s.points.map(p =>
+      `<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="4" fill="${s.color||'#4f46e5'}">
+        <title>${p.label || p.x}: ${(p.y*100).toFixed(1)}%</title>
+       </circle>
+       <text x="${sx(p.x).toFixed(1)}" y="${(sy(p.y)-8).toFixed(1)}" text-anchor="middle" font-size="10" fill="${s.color||'#4f46e5'}">${(p.y*100).toFixed(1)}%</text>`
+    ).join('');
+    return `<polyline points="${pts}" fill="none" stroke="${s.color||'#4f46e5'}" stroke-width="2.5" stroke-linejoin="round"/>
+            ${dots}`;
+  }).join('');
+
+  // x-axis labels
+  const xLabels = chart.series[0].points.map(p =>
+    `<text x="${sx(p.x).toFixed(1)}" y="${(cH+18).toFixed(1)}" text-anchor="middle" font-size="11" fill="#64748b">${p.x}</text>
+     <line x1="${sx(p.x).toFixed(1)}" y1="${cH}" x2="${sx(p.x).toFixed(1)}" y2="${(cH+4).toFixed(1)}" stroke="#cbd5e1"/>`
+  ).join('');
+
+  return `<div style="background:white; border:1px solid var(--border); border-radius:8px; padding:16px;">
+    <h4 style="margin-bottom:4px; font-size:14px;">${chart.title}</h4>
+    ${chart.subtitle ? `<p style="font-size:12px; color:var(--text-secondary); margin-bottom:8px;">${chart.subtitle}</p>` : ''}
+    <svg width="${W}" height="${H}" style="overflow:visible; display:block; margin:0 auto;">
+      <g transform="translate(${PAD.left},${PAD.top})">
+        ${gridLines}
+        ${seriesEls}
+        ${xLabels}
+        <line x1="0" y1="0" x2="0" y2="${cH}" stroke="#cbd5e1"/>
+        <line x1="0" y1="${cH}" x2="${cW}" y2="${cH}" stroke="#cbd5e1"/>
+        <text x="${cW/2}" y="${cH+42}" text-anchor="middle" font-size="12" fill="#64748b">${chart.x_label||''}</text>
+        <text x="${-cH/2}" y="-42" text-anchor="middle" font-size="12" fill="#64748b" transform="rotate(-90)">${chart.y_label||''}</text>
+      </g>
+    </svg>
+  </div>`;
+}
+
+function _svgBar(chart, W, H) {
+  const PAD = { top: 40, right: 20, bottom: 70, left: 55 };
+  const cW = W - PAD.left - PAD.right;
+  const cH = H - PAD.top - PAD.bottom;
+  const yMin = chart.y_min ?? 0;
+  const yMax = chart.y_max ?? 1;
+  const sy = v => cH - ((v - yMin) / (yMax - yMin)) * cH;
+
+  const allPoints = chart.series.flatMap(s => s.points);
+  const n = allPoints.length;
+  if (n === 0) return `<p>无数据</p>`;
+
+  const barW = Math.max(8, (cW / n) * 0.7);
+  const gap = cW / n;
+
+  const yTicks = [0, 0.25, 0.5, 0.75, 1.0].filter(v => v >= yMin && v <= yMax);
+  const gridLines = yTicks.map(v =>
+    `<line x1="0" y1="${sy(v).toFixed(1)}" x2="${cW}" y2="${sy(v).toFixed(1)}" stroke="#f0f0f0" stroke-dasharray="3,3"/>
+     <text x="-8" y="${(sy(v)+4).toFixed(1)}" text-anchor="end" font-size="11" fill="#94a3b8">${v.toFixed(2)}</text>`
+  ).join('');
+
+  const bars = chart.series.flatMap((s, si) =>
+    s.points.map((p, i) => {
+      const x = i * gap + gap / 2 - barW / 2 + si * (barW / chart.series.length);
+      const barH2 = Math.max(1, cH - sy(p.y));
+      const y2 = sy(p.y);
+      const label = String(p.x);
+      const truncLabel = label.length > 7 ? label.slice(0, 6) + '…' : label;
+      return `
+        <rect x="${x.toFixed(1)}" y="${y2.toFixed(1)}" width="${(barW/chart.series.length).toFixed(1)}" height="${barH2.toFixed(1)}"
+          fill="${s.color||'#22c55e'}" rx="2">
+          <title>${p.x}: ${(p.y*100).toFixed(1)}%${p.n ? ` (n=${p.n})` : ''}</title>
+        </rect>
+        <text x="${(x + barW/chart.series.length/2).toFixed(1)}" y="${(y2-3).toFixed(1)}" text-anchor="middle" font-size="10" fill="${s.color||'#22c55e'}">${(p.y*100).toFixed(0)}%</text>
+        <text x="${(i * gap + gap/2).toFixed(1)}" y="${(cH+14).toFixed(1)}" text-anchor="middle" font-size="10" fill="#64748b" transform="rotate(-35,${(i*gap+gap/2).toFixed(1)},${(cH+14).toFixed(1)})">${truncLabel}</text>
+      `;
+    })
+  ).join('');
+
+  return `<div style="background:white; border:1px solid var(--border); border-radius:8px; padding:16px;">
+    <h4 style="margin-bottom:8px; font-size:14px;">${chart.title}</h4>
+    <svg width="${W}" height="${H}" style="overflow:visible; display:block; margin:0 auto;">
+      <g transform="translate(${PAD.left},${PAD.top})">
+        ${gridLines}
+        ${bars}
+        <line x1="0" y1="0" x2="0" y2="${cH}" stroke="#cbd5e1"/>
+        <line x1="0" y1="${cH}" x2="${cW}" y2="${cH}" stroke="#cbd5e1"/>
+        <text x="${cW/2}" y="${cH+62}" text-anchor="middle" font-size="12" fill="#64748b">${chart.x_label||''}</text>
+        <text x="${-cH/2}" y="-42" text-anchor="middle" font-size="12" fill="#64748b" transform="rotate(-90)">${chart.y_label||''}</text>
+      </g>
+    </svg>
+  </div>`;
+}
+
+function _svgHistogram(chart, W, H) {
+  const PAD = { top: 40, right: 20, bottom: 55, left: 55 };
+  const cW = W - PAD.left - PAD.right;
+  const cH = H - PAD.top - PAD.bottom;
+
+  const bins = chart.bins || [];
+  if (bins.length === 0) return `<p>无数据</p>`;
+
+  const maxCount = Math.max(...bins.map(b => b.count), 1);
+  const barW = (cW / bins.length) * 0.85;
+  const gap = cW / bins.length;
+
+  const sy = v => cH - (v / maxCount) * cH;
+
+  const yTicks = [0, 0.25, 0.5, 0.75, 1.0].map(t => Math.round(t * maxCount));
+  const gridLines = [...new Set(yTicks)].map(v =>
+    `<line x1="0" y1="${sy(v).toFixed(1)}" x2="${cW}" y2="${sy(v).toFixed(1)}" stroke="#f0f0f0" stroke-dasharray="3,3"/>
+     <text x="-8" y="${(sy(v)+4).toFixed(1)}" text-anchor="end" font-size="11" fill="#94a3b8">${v}</text>`
+  ).join('');
+
+  const bars2 = bins.map((b, i) => {
+    const x = i * gap + (gap - barW) / 2;
+    const barH2 = Math.max(1, cH - sy(b.count));
+    const y2 = sy(b.count);
+    return `
+      <rect x="${x.toFixed(1)}" y="${y2.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH2.toFixed(1)}"
+        fill="#818cf8" rx="2">
+        <title>${b.x}: ${b.count} 条</title>
+      </rect>
+      ${b.count > 0 ? `<text x="${(x+barW/2).toFixed(1)}" y="${(y2-3).toFixed(1)}" text-anchor="middle" font-size="10" fill="#818cf8">${b.count}</text>` : ''}
+      <text x="${(i*gap+gap/2).toFixed(1)}" y="${(cH+14).toFixed(1)}" text-anchor="middle" font-size="9" fill="#64748b">${b.x}</text>
+    `;
+  }).join('');
+
+  return `<div style="background:white; border:1px solid var(--border); border-radius:8px; padding:16px;">
+    <h4 style="margin-bottom:8px; font-size:14px;">${chart.title}</h4>
+    <svg width="${W}" height="${H}" style="overflow:visible; display:block; margin:0 auto;">
+      <g transform="translate(${PAD.left},${PAD.top})">
+        ${gridLines}
+        ${bars2}
+        <line x1="0" y1="0" x2="0" y2="${cH}" stroke="#cbd5e1"/>
+        <line x1="0" y1="${cH}" x2="${cW}" y2="${cH}" stroke="#cbd5e1"/>
+        <text x="${cW/2}" y="${cH+42}" text-anchor="middle" font-size="12" fill="#64748b">${chart.x_label||''}</text>
+        <text x="${-cH/2}" y="-42" text-anchor="middle" font-size="12" fill="#64748b" transform="rotate(-90)">${chart.y_label||''}</text>
+      </g>
+    </svg>
+  </div>`;
+}
+
+// ── 报告 Tab 主渲染 ──────────────────────────────────────────
+
+let _reportPageState = {};  // {tableId: currentPage}
+
+async function renderReport() {
+  const container = document.getElementById('tab-report');
+  container.style.flexDirection = 'column';
+  container.style.gap = '0';
+  container.innerHTML = `<div style="color:var(--text-secondary); padding:20px;">⏳ 加载报告中...</div>`;
+
+  // 先尝试从 Run 历史取当前选中（如果有），否则取项目最新
+  const data = await _fetchBridge(`/api/projects/${encodeURIComponent(currentProject)}/report`);
+  if (!data || data.error) {
+    container.innerHTML = `
+      <div style="display:flex; flex-direction:column; gap:16px; width:100%; padding:20px;">
+        <h2>📊 评测报告</h2>
+        <div class="card" style="color:var(--text-secondary); text-align:center; padding:40px;">
+          暂无报告数据。请先用 Agent 跑一次评测并执行 record_run。<br><br>
+          <code style="font-size:12px;">python3 skills/version-manager/record_run.py --run-id ... --project ${currentProject} --results ...</code>
+        </div>
+      </div>`;
+    return;
+  }
+
+  const charts = data.summary_charts || [];
+  const tables = data.summary_tables || [];
+  _reportPageState = {};
+
+  // 指标概览卡片
+  const score = data.overall_score ?? 0;
+  const grade = data.grade ?? 'N/A';
+  const gradeColor = {A:'#22c55e', B:'#4f46e5', C:'#f59e0b', D:'#f97316', F:'#ef4444'}[grade] || '#64748b';
+
+  const metricCards = Object.entries(data.fields || {}).flatMap(([fname, fdata]) =>
+    (fdata.metrics || []).map(m =>
+      `<div style="background:white; border:1px solid var(--border); border-radius:8px; padding:12px; text-align:center; min-width:100px;">
+        <div style="font-size:12px; color:var(--text-secondary); margin-bottom:4px;">${m.name}</div>
+        <div style="font-size:20px; font-weight:700; color:var(--primary);">${(m.mean * 100).toFixed(1)}%</div>
+       </div>`
+    )
+  ).join('');
+
+  container.innerHTML = `
+    <div style="display:flex; flex-direction:column; gap:24px; width:100%; padding:20px;">
+
+      <!-- 顶部摘要 -->
+      <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+        <h2>📊 评测报告 — ${currentProject}</h2>
+        <span style="font-size:13px; color:var(--text-secondary);">${data.created_at || ''}</span>
+        <span style="font-size:13px; color:var(--text-secondary);">${data.n_cases || 0} cases · 通过率 ${((data.pass_rate||0)*100).toFixed(1)}%</span>
+        <button class="btn btn-ghost" style="font-size:12px;" onclick="renderReport()">🔄 刷新</button>
+      </div>
+
+      <!-- 总分 + 指标卡 -->
+      <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
+        <div style="background:white; border:2px solid ${gradeColor}; border-radius:12px; padding:16px 24px; text-align:center;">
+          <div style="font-size:12px; color:var(--text-secondary);">总分</div>
+          <div style="font-size:40px; font-weight:800; color:${gradeColor};">${(score*100).toFixed(1)}%</div>
+          <div style="font-size:18px; font-weight:700; color:${gradeColor};">${grade}</div>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">${metricCards}</div>
+      </div>
+
+      <!-- 图表区 -->
+      ${charts.length > 0 ? `
+        <div>
+          <h3 style="margin-bottom:16px;">图表分析</h3>
+          <div id="report-charts-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(480px, 1fr)); gap:16px;">
+            ${charts.map(c => _svgChart(c, 480, 280)).join('')}
+          </div>
+        </div>` : ''}
+
+      <!-- 表格区 -->
+      ${tables.length > 0 ? `
+        <div id="report-tables-section">
+          <h3 style="margin-bottom:16px;">数据明细</h3>
+          ${tables.map(t => _renderReportTable(t)).join('')}
+        </div>` : ''}
+    </div>
+  `;
+}
+
+function _renderReportTable(table) {
+  const PAGE_SIZE = 20;
+  const page = _reportPageState[table.id] || 0;
+  const rows = table.rows || [];
+  const cols = table.columns || [];
+  const paginate = table.paginate && rows.length > PAGE_SIZE;
+  const displayRows = paginate ? rows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE) : rows;
+  const totalPages = paginate ? Math.ceil(rows.length / PAGE_SIZE) : 1;
+
+  const headerCells = cols.map(c =>
+    `<th style="padding:8px 10px; text-align:left; background:var(--bg); white-space:nowrap; font-size:12px; position:sticky; top:0;">${c}</th>`
+  ).join('');
+
+  const bodyRows = displayRows.map(row => {
+    const cells = cols.map(c => {
+      const val = row[c];
+      let display = val == null ? '' : val;
+      let style = 'font-size:12px;';
+      // 对 0~1 的 score 字段上色
+      if (typeof val === 'number' && c !== 'case_id' && val >= 0 && val <= 1) {
+        const color = val >= 0.8 ? '#22c55e' : (val >= 0.5 ? '#f59e0b' : '#ef4444');
+        style += `color:${color}; font-weight:600;`;
+        display = (val * 100).toFixed(0) + '%';
+      }
+      return `<td style="padding:6px 10px; border-bottom:1px solid var(--border); ${style}">${display}</td>`;
+    }).join('');
+    return `<tr onmouseenter="this.style.background='var(--bg)'" onmouseleave="this.style.background=''">${cells}</tr>`;
+  }).join('');
+
+  const pagination = paginate ? `
+    <div style="display:flex; gap:8px; align-items:center; padding:10px 16px; background:var(--bg); font-size:13px;">
+      <button class="btn btn-ghost" style="padding:4px 8px;" ${page===0?'disabled':''} onclick="_reportChangePage('${table.id}', ${page-1})">← 上一页</button>
+      <span>${page+1} / ${totalPages}（共 ${rows.length} 条）</span>
+      <button class="btn btn-ghost" style="padding:4px 8px;" ${page===totalPages-1?'disabled':''} onclick="_reportChangePage('${table.id}', ${page+1})">下一页 →</button>
+    </div>` : `<div style="padding:8px 16px; font-size:12px; color:var(--text-secondary); background:var(--bg);">共 ${rows.length} 条</div>`;
+
+  return `
+    <div style="margin-bottom:24px;">
+      <h4 style="margin-bottom:8px; font-size:14px;">${table.title}</h4>
+      <div style="border:1px solid var(--border); border-radius:8px; overflow:hidden;">
+        <div style="overflow-x:auto; max-height:400px; overflow-y:auto;">
+          <table style="width:100%; border-collapse:collapse;">
+            <thead><tr>${headerCells}</tr></thead>
+            <tbody>${bodyRows}</tbody>
+          </table>
+        </div>
+        ${pagination}
+      </div>
+    </div>`;
+}
+
+function _reportChangePage(tableId, newPage) {
+  _reportPageState[tableId] = newPage;
+  // 只重新渲染表格部分，不重载整个 tab
+  _fetchBridge(`/api/projects/${encodeURIComponent(currentProject)}/report`).then(data => {
+    if (!data) return;
+    const tables = data.summary_tables || [];
+    const section = document.getElementById('report-tables-section');
+    if (section) {
+      section.innerHTML = `<h3 style="margin-bottom:16px;">数据明细</h3>` +
+        tables.map(t => _renderReportTable(t)).join('');
+    }
+  });
 }
 
 // 页面初始化
