@@ -17,6 +17,10 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+# 把 scripts/ 加入 sys.path，以便 import enrich_report
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts"))
+from enrich_report import enrich as _enrich_report  # noqa: E402
+
 REPO_ROOT = Path(__file__).parent.parent.parent  # skills/version-manager/ 的上上上级
 
 
@@ -53,8 +57,13 @@ def main():
         print(f"❌ 找不到 results 文件: {results_path}", file=sys.stderr)
         sys.exit(1)
 
-    # 1. 复制 results.json
+    # 1. 加载并丰富化 results.json（注入 summary_charts + summary_tables）
     results = json.loads(results_path.read_text("utf-8"))
+    try:
+        results = _enrich_report(results)
+        print("  📊 报告丰富化成功")
+    except Exception as e:
+        print(f"  ⚠️  报告丰富化跳过（{e}）", file=sys.stderr)
     (run_dir / "results.json").write_text(
         json.dumps(results, ensure_ascii=False, indent=4), "utf-8"
     )
