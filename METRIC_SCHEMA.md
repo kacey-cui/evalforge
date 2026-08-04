@@ -138,3 +138,39 @@ Agent 生成指标时，遵循以下步骤：
 - `requires` 要准确，不然导出的脚本会缺数据
 - LLM 指标的 `code_template` 中 `model=JUDGE_MODEL` 固定不变，模型由平台全局配置
 - 指标 id 不能和已有指标重复
+
+## 发布到共享仓库
+
+### 查重规则
+
+发布到共享仓库前，脚本自动执行以下查重。任一命中则拒绝或警告：
+
+| 检查项 | 规则 | 动作 |
+|--------|------|------|
+| **ID 完全相同** | `id` 与共享仓库中已有 metric 一致 | ❌ 拒绝，提示已有相同 ID |
+| **名称高度相似** | `name` 与已有 metric 的编辑距离 ≤ 3 且字符长度差 ≤ 5 | ⚠️ 警告，建议改名 |
+| **criteria 高度相似** | `criteria` 与已有 LLM metric 的 Jaccard 相似度 ≥ 0.7 | ⚠️ 警告，可能重复 |
+| **code_template 高度相似** | `code_template` 与已有 metric 的 Jaccard 相似度 ≥ 0.8 | ⚠️ 警告，可能是变体 |
+
+**Jaccard 相似度** = 两个文本分词后的交集大小 / 并集大小。值域 0~1，越高越相似。
+
+**编辑距离**（Levenshtein）= 把字符串 A 变成 B 需要多少步操作（插入/删除/替换）。
+
+### 发布流程
+
+```bash
+# 1. 查重
+python scripts/publish_metric.py --check --metric data/metrics/llm/empathy.json
+
+# 2. 通过后发布
+python scripts/publish_metric.py --publish --metric data/metrics/llm/empathy.json \
+  --repo https://github.com/your-org/evalplatform-metrics.git
+```
+
+### 发现（拉取共享指标）
+
+```bash
+python scripts/publish_metric.py --discover \
+  --repo https://github.com/your-org/evalplatform-metrics.git \
+  --target data/metrics/
+```
