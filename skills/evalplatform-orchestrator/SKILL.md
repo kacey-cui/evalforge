@@ -280,6 +280,50 @@ MODEL_API_KEY=xxx python eval_script.py
 
 ---
 
+---
+
+## Step 7: 记录 Run 历史（version-manager）
+
+> 每次评测完成后，**必须**调用此步骤，否则 UI 的 Run 历史和对比视图将看不到本次评测结果。
+
+### 7.1 生成 Run ID
+
+格式规范：`run_YYYYMMDD_NNN`，其中 NNN 是当天序号（从 001 开始）。
+
+示例：
+```
+run_20260804_001
+run_20260804_002
+```
+
+获取当天已有 Run 数量来确定序号：
+```bash
+python3 skills/version-manager/list_runs.py --project {project} --limit 100 | grep $(date +%Y%m%d) | wc -l
+```
+
+### 7.2 调用 record_run
+
+```bash
+python3 skills/version-manager/record_run.py \
+    --run-id run_{YYYYMMDD}_{NNN} \
+    --project {project_id} \
+    --results data/projects/{project_id}/eval_report.json \
+    --triggered-by agent
+```
+
+成功输出：`✅ Run run_XXXX 已记录（git commit）`
+
+### 7.3 告知用户
+
+在最终报告汇报后，追加一行：
+
+```
+📌 Run 已记录，可在 EvalPlatform UI 的 🕐 Run 历史 Tab 查看，或运行:
+   python3 skills/version-manager/list_runs.py --project {project}
+```
+
+---
+
 ## 关键原则
 
 1. **原始数据不丢失** — API 拉来的数据先存 raw/，再转换
