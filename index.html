@@ -1185,6 +1185,403 @@ async function renderOverview() {
   `;
 }
 
+// ============================================================
+// Run 历史 Tab
+// ============================================================
+let _historyRuns = [];    // 缓存 run 列表，供对比视图使用
+let _historySelected = new Set();  // 多选状态
+
+async function renderHistory() {
+  const container = document.getElementById('tab-history');
+  container.style.flexDirection = 'column';
+  container.style.gap = '20px';
+  container.innerHTML = `<div style="color:var(--text-secondary); padding:20px;">⏳ 加载中...</div>`;
+
+  const runs = await _fetchBridge(`/api/runs?project=${encodeURIComponent(currentProject)}`);
+  _historyRuns = runs || [];
+  _historySelected.clear();
+
+  if (_historyRuns.length === 0) {
+    container.innerHTML = `
+      <div style="display:flex; flex-direction:column; gap:20px; width:100%;">
+        <h2>🕐 Run 历史</h2>
+        <div class="card" style="color:var(--text-secondary); text-align:center; padding:40px;">
+          暂无 Run 历史。<br>先导出 Skill 让 Agent 跑一次评测吧。
+        </div>
+      </div>`;
+    return;
+  }
+
+  _renderHistoryTable(container);
+}
+
+function _renderHistoryTable(container) {
+  const statusColors = { pass: 'var(--success)', fail: 'var(--danger)', partial: '#f59e0b' };
+  const statusIcons = { pass: '✅', fail: '❌', partial: '⚠️' };
+
+  container.innerHTML = `
+    <div style="display:flex; flex-direction:column; gap:16px; width:100%;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2>🕐 Run 历史 <span style="font-size:14px; color:var(--text-secondary); font-weight:normal;">
+          (${_historyRuns.length} 条)
+        </span></h2>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <span id="history-selected-count" style="font-size:13px; color:var(--text-secondary);"></span>
+          <button id="btn-create-group" class="btn btn-primary" style="display:none;"
+            onclick="_createGroupFromSelected()">
+            🗂️ 创建对比组
+          </button>
+          <button class="btn btn-ghost" onclick="renderHistory()">🔄 刷新</button>
+        </div>
+      </div>
+
+      <div class="card" style="padding:0; overflow:hidden;">
+        <table style="width:100%; border-collapse:collapse; font-size:13px;">
+          <thead>
+            <tr style="background:var(--bg); border-bottom:1px solid var(--border);">
+              <th style="padding:10px 12px; text-align:left; width:32px;">
+                <input type="checkbox" id="history-check-all"
+                  onchange="_historyToggleAll(this.checked)">
+              </th>
+              <th style="padding:10px 12px; text-align:left;">Run ID</th>
+              <th style="padding:10px 12px; text-align:left;">时间</th>
+              <th style="padding:10px 12px; text-align:left;">总分</th>
+              <th style="padding:10px 12px; text-align:left;">状态</th>
+              <th style="padding:10px 12px; text-align:left;">触发</th>
+              <th style="padding:10px 12px; text-align:left;">操作</th>
+            </tr>
+          </thead>
+          <tbody id="history-tbody">
+            ${_historyRuns.map((r, i) => `
+              <tr id="history-row-${i}" style="border-bottom:1px solid var(--border);"
+                  onmouseenter="this.style.background='var(--bg)'"
+                  onmouseleave="this.style.background=''">
+                <td style="padding:10px 12px;">
+                  <input type="checkbox" data-run-id="${r.run_id}"
+                    onchange="_historyToggleSelect('${r.run_id}', this.checked)">
+                </td>
+                <td style="padding:10px 12px;">
+                  <code style="font-size:12px;">${r.run_id}</code>
+                </td>
+                <td style="padding:10px 12px; color:var(--text-secondary);">
+                  ${r.timestamp ? r.timestamp.slice(0,19).replace('T',' ') : 'N/A'}
+                </td>
+                <td style="padding:10px 12px;">
+                  <strong>${r.overall_score != null ? r.overall_score.toFixed(4) : 'N/A'}</strong>
+                </td>
+                <td style="padding:10px 12px; color:${statusColors[r.status]||'inherit'};">
+                  ${statusIcons[r.status]||'?'} ${r.status}
+                </td>
+                <td style="padding:10px 12px;">
+                  ${r.triggered_by === 'agent' ? '🤖 Agent' : '🖱️ UI'}
+                </td>
+                <td style="padding:10px 12px;">
+                  <button class="btn btn-ghost" style="font-size:11px; padding:4px 8px;"
+                    onclick="_toggleRunDetail(${i}, '${r.run_id}')">详情</button>
+                  <button class="btn" style="font-size:11px; padding:4px 8px; background:#fee2e2; color:#b91c1c; border:none;"
+                    onclick="_softDeleteRun('${r.run_id}')">删除</button>
+                </td>
+              </tr>
+              <tr id="history-detail-${i}" style="display:none; background:var(--bg);">
+                <td colspan="7" style="padding:12px 16px;">
+                  <div id="history-detail-content-${i}" style="color:var(--text-secondary);">加载中...</div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function _historyToggleAll(checked) {
+  _historySelected.clear();
+  document.querySelectorAll('#history-tbody input[type=checkbox]').forEach(cb => {
+    cb.checked = checked;
+    if (checked) _historySelected.add(cb.dataset.runId);
+  });
+  _updateHistorySelectionUI();
+}
+
+function _historyToggleSelect(runId, checked) {
+  if (checked) _historySelected.add(runId);
+  else _historySelected.delete(runId);
+  _updateHistorySelectionUI();
+}
+
+function _updateHistorySelectionUI() {
+  const count = _historySelected.size;
+  const countEl = document.getElementById('history-selected-count');
+  const btnEl = document.getElementById('btn-create-group');
+  if (countEl) countEl.textContent = count > 0 ? `已选 ${count} 条` : '';
+  if (btnEl) btnEl.style.display = count >= 2 ? 'inline-block' : 'none';
+}
+
+async function _toggleRunDetail(idx, runId) {
+  const detailRow = document.getElementById(`history-detail-${idx}`);
+  const contentEl = document.getElementById(`history-detail-content-${idx}`);
+  if (detailRow.style.display === 'none') {
+    detailRow.style.display = 'table-row';
+    const data = await _fetchBridge(`/api/runs/${runId}`);
+    if (!data) {
+      contentEl.textContent = '加载失败';
+      return;
+    }
+    const config = data.config || {};
+    const fields = config.fields || [];
+    contentEl.innerHTML = `
+      <div style="display:flex; gap:16px; font-size:12px;">
+        <div>
+          <strong>模型:</strong> ${config.global?.modelId || 'N/A'}<br>
+          <strong>字段数:</strong> ${fields.length}
+        </div>
+        <div>
+          <strong>总 Metric:</strong>
+          ${fields.reduce((a,f)=>a+(f.gatePipeline||[]).length+(f.scorePipeline||[]).length,0)}<br>
+          <strong>数据集 SHA256前8位:</strong> ${(data.dataset_ref?.sha256||'N/A').slice(0,8)}
+        </div>
+      </div>
+      <pre style="margin-top:8px; font-size:11px; background:white; padding:8px; border-radius:4px; overflow:auto; max-height:120px;">${JSON.stringify(config, null, 2)}</pre>
+    `;
+  } else {
+    detailRow.style.display = 'none';
+  }
+}
+
+async function _softDeleteRun(runId) {
+  if (!confirm(`确定删除 Run "${runId}"？\n（软删除，git 历史仍然保留）`)) return;
+  const res = await _fetchBridge(`/api/runs/${runId}`); // 先确认存在
+  const delRes = await fetch(`${GIT_BRIDGE}/api/runs/${runId}`, { method: 'DELETE' });
+  if (delRes.ok) {
+    alert(`✅ Run ${runId} 已软删除`);
+    renderHistory();
+  } else {
+    alert(`❌ 删除失败`);
+  }
+}
+
+async function _createGroupFromSelected() {
+  if (_historySelected.size < 2) { alert('至少选2个 Run'); return; }
+  const name = prompt('对比组名称（如：换模型对比）：');
+  if (!name || !name.trim()) return;
+  const res = await fetch(`${GIT_BRIDGE}/api/groups`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: name.trim(), run_ids: [..._historySelected] }),
+  });
+  if (res.ok) {
+    alert(`✅ 对比组 "${name}" 创建成功`);
+    _historySelected.clear();
+    _updateHistorySelectionUI();
+  } else {
+    alert('❌ 创建失败');
+  }
+}
+
+// ============================================================
+// 对比视图 Tab
+// ============================================================
+async function renderCompare() {
+  const container = document.getElementById('tab-compare');
+  container.style.flexDirection = 'column';
+  container.style.gap = '20px';
+
+  // 获取对比组列表
+  const groups = await _fetchBridge('/api/groups') || [];
+  const runsForDropdown = _historyRuns.length > 0
+    ? _historyRuns
+    : (await _fetchBridge(`/api/runs?project=${encodeURIComponent(currentProject)}`)) || [];
+
+  const runOptions = runsForDropdown.map(r =>
+    `<option value="${r.run_id}">${r.run_id} (${r.timestamp?.slice(0,10)||'N/A'}, ${r.overall_score?.toFixed(2)||'?'}分)</option>`
+  ).join('');
+
+  const groupOptions = groups.map(g =>
+    `<option value="__group__${g.name}">[对比组] ${g.name} (${g.runs.length} 个Run)</option>`
+  ).join('');
+
+  container.innerHTML = `
+    <div style="display:flex; flex-direction:column; gap:20px; width:100%;">
+      <h2>🔀 对比视图</h2>
+
+      <!-- 选择栏 -->
+      <div class="card" style="display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap;">
+        <div style="flex:1; min-width:200px;">
+          <label>基准 Run A</label>
+          <select id="compare-run-a" style="width:100%; padding:6px; border:1px solid var(--border); border-radius:4px;">
+            <option value="">-- 选择 Run --</option>
+            ${runOptions}
+          </select>
+        </div>
+        <div style="font-size:20px; padding-bottom:8px;">VS</div>
+        <div style="flex:1; min-width:200px;">
+          <label>对比 Run B</label>
+          <select id="compare-run-b" style="width:100%; padding:6px; border:1px solid var(--border); border-radius:4px;">
+            <option value="">-- 选择 Run --</option>
+            ${runOptions}
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="_runDiff()">🔍 对比</button>
+        ${groups.length > 0 ? `
+        <div style="width:100%; border-top:1px solid var(--border); padding-top:12px;">
+          <label>或从对比组快速加载</label>
+          <select id="compare-group-select" onchange="_loadGroupIntoCompare(this.value)"
+            style="width:300px; padding:6px; border:1px solid var(--border); border-radius:4px;">
+            <option value="">-- 选择对比组 --</option>
+            ${groups.map(g => `<option value="${g.name}">${g.name} (${g.runs.join(', ')})</option>`).join('')}
+          </select>
+        </div>` : ''}
+      </div>
+
+      <!-- 结果区 -->
+      <div id="compare-result"></div>
+    </div>
+  `;
+}
+
+function _loadGroupIntoCompare(groupName) {
+  if (!groupName) return;
+  const groups = [];
+  // 重新从服务拿对比组数据
+  _fetchBridge('/api/groups').then(data => {
+    const group = (data||[]).find(g => g.name === groupName);
+    if (!group || group.runs.length < 2) { alert('对比组至少需要2个Run'); return; }
+    document.getElementById('compare-run-a').value = group.runs[0];
+    document.getElementById('compare-run-b').value = group.runs[1];
+  });
+}
+
+async function _runDiff() {
+  const runA = document.getElementById('compare-run-a').value;
+  const runB = document.getElementById('compare-run-b').value;
+  const resultEl = document.getElementById('compare-result');
+
+  if (!runA || !runB) { alert('请选择两个 Run'); return; }
+  if (runA === runB) { alert('请选择不同的 Run'); return; }
+
+  resultEl.innerHTML = `<div style="color:var(--text-secondary);">⏳ 对比中...</div>`;
+
+  const diff = await _fetchBridge(`/api/runs/${runA}/diff/${runB}`);
+  if (!diff) {
+    resultEl.innerHTML = `<div style="color:var(--danger);">❌ 对比失败，请确认 git_bridge 正在运行</div>`;
+    return;
+  }
+
+  const scoreA = diff.score_a ?? 0;
+  const scoreB = diff.score_b ?? 0;
+  const scoreDelta = scoreB - scoreA;
+  const deltaColor = scoreDelta > 0 ? 'var(--success)' : (scoreDelta < 0 ? 'var(--danger)' : 'var(--text-secondary)');
+  const deltaIcon = scoreDelta > 0 ? '🔺' : (scoreDelta < 0 ? '🔻' : '➡️');
+
+  // 字段分数对比（构建简单柱状图）
+  const allFields = Array.from(new Set([
+    ...Object.keys(diff.fields_a || {}),
+    ...Object.keys(diff.fields_b || {}),
+  ]));
+
+  const fieldBars = allFields.map(f => {
+    const fa = (diff.fields_a?.[f] ?? 0) * 100;
+    const fb = (diff.fields_b?.[f] ?? 0) * 100;
+    const fd = fb - fa;
+    const fdColor = fd > 0 ? 'var(--success)' : (fd < 0 ? 'var(--danger)' : 'var(--text-secondary)');
+    return `
+      <div style="margin-bottom:12px;">
+        <div style="font-size:13px; font-weight:500; margin-bottom:4px;">${f}</div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <span style="width:60px; font-size:12px; color:var(--text-secondary);">${runA.slice(-6)}</span>
+          <div style="flex:1; background:var(--bg); border-radius:4px; height:16px;">
+            <div style="height:100%; width:${fa.toFixed(1)}%; background:#4f46e5; border-radius:4px; transition:width 0.3s;"></div>
+          </div>
+          <span style="width:40px; font-size:12px; text-align:right;">${(fa/100).toFixed(2)}</span>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center; margin-top:2px;">
+          <span style="width:60px; font-size:12px; color:var(--text-secondary);">${runB.slice(-6)}</span>
+          <div style="flex:1; background:var(--bg); border-radius:4px; height:16px;">
+            <div style="height:100%; width:${fb.toFixed(1)}%; background:#22c55e; border-radius:4px; transition:width 0.3s;"></div>
+          </div>
+          <span style="width:40px; font-size:12px; text-align:right;">${(fb/100).toFixed(2)}</span>
+        </div>
+        <div style="font-size:11px; color:${fdColor}; margin-top:2px; padding-left:68px;">
+          变化: ${fd >= 0 ? '+' : ''}${fd.toFixed(1)}%
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Config diff 表格
+  const configChanges = diff.config_diff || [];
+  const configTable = configChanges.length === 0
+    ? `<div style="color:var(--success); font-size:13px;">✅ 配置无变化</div>`
+    : `<table style="width:100%; border-collapse:collapse; font-size:12px;">
+        <tr style="background:var(--bg);">
+          <th style="padding:6px 10px; text-align:left; border:1px solid var(--border);">配置项</th>
+          <th style="padding:6px 10px; text-align:left; border:1px solid var(--border);">Run A (变更前)</th>
+          <th style="padding:6px 10px; text-align:left; border:1px solid var(--border);">Run B (变更后)</th>
+        </tr>
+        ${configChanges.map(ch => `
+          <tr>
+            <td style="padding:6px 10px; border:1px solid var(--border); font-family:monospace;">${ch.key}</td>
+            <td style="padding:6px 10px; border:1px solid var(--border); background:#fee2e2;">${JSON.stringify(ch.before)}</td>
+            <td style="padding:6px 10px; border:1px solid var(--border); background:#dcfce7;">${JSON.stringify(ch.after)}</td>
+          </tr>
+        `).join('')}
+      </table>`;
+
+  resultEl.innerHTML = `
+    <div style="display:flex; flex-direction:column; gap:16px;">
+
+      <!-- 总分对比 -->
+      <div class="card">
+        <h3 style="margin-bottom:12px;">📊 总分对比</h3>
+        <div style="display:flex; gap:32px; align-items:center;">
+          <div style="text-align:center;">
+            <div style="font-size:12px; color:var(--text-secondary);">${runA}</div>
+            <div style="font-size:32px; font-weight:700; color:#4f46e5;">${scoreA.toFixed(4)}</div>
+          </div>
+          <div style="font-size:24px; color:${deltaColor};">
+            ${deltaIcon} ${scoreDelta >= 0 ? '+' : ''}${scoreDelta.toFixed(4)}
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:12px; color:var(--text-secondary);">${runB}</div>
+            <div style="font-size:32px; font-weight:700; color:#22c55e;">${scoreB.toFixed(4)}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 字段分数柱状图 -->
+      ${allFields.length > 0 ? `
+      <div class="card">
+        <h3 style="margin-bottom:16px;">📈 字段分数对比</h3>
+        <div style="display:flex; gap:16px; font-size:11px; color:var(--text-secondary); margin-bottom:12px;">
+          <span>■ <span style="color:#4f46e5;">${runA}</span></span>
+          <span>■ <span style="color:#22c55e;">${runB}</span></span>
+        </div>
+        ${fieldBars}
+      </div>` : ''}
+
+      <!-- 数据集对比 -->
+      <div class="card">
+        <h3 style="margin-bottom:12px;">🗂️ 数据集对比</h3>
+        ${diff.dataset_same
+          ? `<div style="color:var(--success);">✅ 两次 Run 使用相同数据集（SHA256 一致）</div>`
+          : `<div style="color:var(--danger);">⚠️ 数据集不同</div>
+             <div style="font-size:12px; margin-top:8px;">
+               <div>Run A: <code>${diff.dataset_a?.source || 'N/A'}</code> (sha256前8位: ${(diff.dataset_a?.sha256||'').slice(0,8)||'N/A'})</div>
+               <div>Run B: <code>${diff.dataset_b?.source || 'N/A'}</code> (sha256前8位: ${(diff.dataset_b?.sha256||'').slice(0,8)||'N/A'})</div>
+             </div>`
+        }
+      </div>
+
+      <!-- Config Diff -->
+      <div class="card">
+        <h3 style="margin-bottom:12px;">⚙️ 配置变更</h3>
+        ${configTable}
+      </div>
+    </div>
+  `;
+}
+
 // 页面初始化
 document.addEventListener('DOMContentLoaded', () => {
   renderProjectSelector();
