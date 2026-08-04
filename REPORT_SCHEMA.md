@@ -126,3 +126,90 @@ Agent 拿到 report.json 后可以：
 | >= 0.7 | C | 一般 |
 | >= 0.6 | D | 及格 |
 | < 0.6 | F | 不及格 |
+
+---
+
+## summary_charts（自动生成，由 enrich_report.py 注入）
+
+由 `scripts/enrich_report.py` 自动检测指标模式并生成，**不需要手写**。
+`record_run.py` 调用 `enrich()` 后，每份 `data/runs/{run_id}/results.json` 自动含此字段。
+
+```json
+"summary_charts": [
+  {
+    "id": "retrieval_recall_curve",
+    "type": "line",
+    "title": "Recall@k 曲线（retrieval）",
+    "x_label": "k（召回数量）",
+    "y_label": "Recall",
+    "y_min": 0, "y_max": 1,
+    "series": [
+      {
+        "label": "整体",
+        "color": "#4f46e5",
+        "points": [
+          {"x": 1,  "y": 0.612,  "label": "Recall@1"},
+          {"x": 3,  "y": 0.7829, "label": "Recall@3"},
+          {"x": 10, "y": 0.9026, "label": "Recall@10"}
+        ]
+      }
+    ]
+  },
+  {
+    "id": "retrieval_domain_breakdown",
+    "type": "bar",
+    "title": "各域 Recall@10",
+    "x_label": "域", "y_label": "Recall@10",
+    "y_min": 0, "y_max": 1,
+    "series": [{"label": "Recall@10", "color": "#f59e0b", "points": [{"x": "ABC22", "y": 0.91, "n": 34}]}]
+  },
+  {
+    "id": "overall_score_dist",
+    "type": "histogram",
+    "title": "总分分布",
+    "x_label": "得分", "y_label": "案例数",
+    "bins": [{"x": "0.0-0.1", "count": 2}, {"x": "0.8-0.9", "count": 45}]
+  }
+]
+```
+
+支持的 `type` 值：`line`（折线图）、`bar`（柱状图）、`histogram`（直方图）
+
+---
+
+## summary_tables（自动生成，由 enrich_report.py 注入）
+
+```json
+"summary_tables": [
+  {
+    "id": "bad_cases",
+    "title": "失败案例 (30 条)",
+    "columns": ["case_id", "input", "expected", "Recall@1", "MRR", "score"],
+    "rows": [{"case_id": 5, "input": "用户反映...", "expected": "ABC22110", "Recall@1": 0, "MRR": 0.167, "score": 0.533}],
+    "paginate": false
+  },
+  {
+    "id": "per_case",
+    "title": "逐案明细 (195 条)",
+    "columns": ["case_id", "input", "expected", "Recall@1", "Recall@10", "MRR", "overall_score"],
+    "rows": [...],
+    "paginate": true
+  }
+]
+```
+
+## 复用指南
+
+新项目无需任何代码变更：
+1. `eval_script.py` 正常输出标准 `eval_report.json`
+2. 运行 `record_run.py`，自动调用 `enrich()` 注入图表数据
+3. UI 的 📊 报告 Tab 自动渲染，无需配置
+
+如需定制域分拆行为，在项目目录创建 `enrich_config.json`：
+```json
+{
+  "domain_field": "expected_output",
+  "domain_extract": "prefix5",
+  "domain_label": "故障域"
+}
+```
