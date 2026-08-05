@@ -139,6 +139,36 @@ Agent 生成指标时，遵循以下步骤：
 - LLM 指标的 `code_template` 中 `model=JUDGE_MODEL` 固定不变，模型由平台全局配置
 - 指标 id 不能和已有指标重复
 
+### ⚠️ 参数化设计规范 — 禁止创建"数字变体"
+
+**反模式**（不允许）：
+```
+recall_1.json / recall_3.json / recall_5.json / recall_10.json ...
+```
+这些 metric 逻辑完全相同，只是 K 值不同，不应拆成多个 metric 文件。
+
+**正确做法**：将变化的数值设为 `params`，一个文件覆盖所有情况：
+```json
+{
+  "id": "recall_at_k",
+  "params": [
+    {"key": "k", "type": "number", "default": 5, "min": 1, "max": 100},
+    {"key": "threshold", ...}
+  ]
+}
+```
+
+**canvas 中多次使用同一 metric**（通过 `label` 区分展示名）：
+```json
+"scorePipeline": [
+  {"metricId": "recall_at_k", "label": "Recall@3",  "params": {"k": 3,  "threshold": 0.5}, "weight": 0.1},
+  {"metricId": "recall_at_k", "label": "Recall@10", "params": {"k": 10, "threshold": 0.5}, "weight": 0.15},
+  {"metricId": "recall_at_k", "label": "Recall@50", "params": {"k": 50, "threshold": 0.5}, "weight": 0.10}
+]
+```
+
+**判断标准**：如果你想创建的 metric ID 形如 `xxx_<数字>` 或名称含 `@数字`，先检查是否已有带 `k`/`n` 参数的同类 metric，有则直接在 canvas 中参数化引用。
+
 ## 发布到共享仓库
 
 ### 查重规则
@@ -151,6 +181,8 @@ Agent 生成指标时，遵循以下步骤：
 | **名称高度相似** | `name` 与已有 metric 的编辑距离 ≤ 3 且字符长度差 ≤ 5 | ⚠️ 警告，建议改名 |
 | **criteria 高度相似** | `criteria` 与已有 LLM metric 的 Jaccard 相似度 ≥ 0.7 | ⚠️ 警告，可能重复 |
 | **code_template 高度相似** | `code_template` 与已有 metric 的 Jaccard 相似度 ≥ 0.8 | ⚠️ 警告，可能是变体 |
+| **参数化变体冲突** | ID 形如 `base_<N>`，且 `base_<M>` 已存在 | ❌ 拒绝，提示合并为参数化 metric |
+| **忽略参数化 metric** | ID 形如 `base_<N>`，且已有带 k/n 参数的同类 metric | ⚠️ 警告，建议改用参数化引用 |
 
 **Jaccard 相似度** = 两个文本分词后的交集大小 / 并集大小。值域 0~1，越高越相似。
 

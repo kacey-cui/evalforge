@@ -44,9 +44,23 @@ def load_existing_metrics(repo_dir: str) -> list[dict]:
     return metrics
 
 
+def _numeric_suffix(metric_id: str):
+    """如果 ID 形如 base_<number>，返回 (base, number)，否则返回 None。"""
+    m = re.match(r'^([a-z][a-z0-9]*(?:_[a-z][a-z0-9]*)*)_(\d+)$', metric_id)
+    return (m.group(1), int(m.group(2))) if m else None
+
+
+def _has_numeric_param(metric: dict) -> bool:
+    """判断 metric 是否已有数值型的 k/n/top_k 类参数（可参数化 metric 的标志）。"""
+    numeric_param_keys = {'k', 'n', 'top_k', 'top_n', 'num', 'limit', 'cutoff'}
+    return any(p['key'] in numeric_param_keys for p in metric.get('params', []))
+
+
 def check_metric(metric: dict, existing: list[dict]) -> list[str]:
     """查重，返回警告列表。空列表 = 通过"""
     warnings = []
+
+    suffix_info = _numeric_suffix(metric['id'])
 
     for existing_m in existing:
         # 1. ID 完全相同
@@ -73,6 +87,28 @@ def check_metric(metric: dict, existing: list[dict]) -> list[str]:
         if j >= 0.8:
             warnings.append(
                 f'⚠️ 代码模板相似度 {j:.2f}: "{metric["name"]}" vs "{existing_m["name"]}"')
+
+        # 5. 参数化变体检测 ─ 防止 recall_3 / recall_5 / recall_10 泛滥
+        if suffix_info:
+            base, num = suffix_info
+            ex_suffix = _numeric_suffix(existing_m['id'])
+            # 5a. 同一 base_<N> 模式的另一个变体已存在 → 强烈建议合并
+            if ex_suffix and ex_suffix[0] == base:
+                warnings.append(
+                    f'❌ 参数化变体冲突: "{metric["id"]}" 与 "{existing_m["id"]}" '
+                    f'同属 "{base}_<N>" 系列。请改用一个带 k/n 参数的 metric，'
+                    f'在 canvas scorePipeline 中多次引用并设置不同参数值。'
+                )
+                return warnings
+            # 5b. 已有同名 base 的参数化 metric（如 recall_at_k）→ 直接用它
+            if _has_numeric_param(existing_m):
+                id_similarity = jaccard(base.replace('_', ' '), existing_m['id'].replace('_', ' '))
+                if id_similarity >= 0.4:
+                    warnings.append(
+                        f'⚠️ 已有参数化 metric: "{existing_m["id"]}" ({existing_m["name"]}) '
+                        f'支持 k/n 类参数，"{metric["id"]}" 应改为在 canvas 中引用它并传入 '
+                        f'参数 k={num}，而非新建 metric。'
+                    )
 
     return warnings
 
