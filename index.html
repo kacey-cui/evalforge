@@ -69,16 +69,32 @@ label { font-size: 12px; color: var(--text-secondary); display: block; margin-bo
 .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; }
 .badge-non-llm { background: #dbeafe; color: #1e40af; }
 .badge-llm { background: #fef3c7; color: #92400e; }
+
+/* 项目侧边栏 */
+.project-item { padding: 8px 12px; cursor: pointer; font-size: 12px; border-left: 3px solid transparent; display: flex; justify-content: space-between; align-items: center; }
+.project-item:hover { background: var(--bg); }
+.project-item.active { background: var(--primary-light); border-left-color: var(--primary); font-weight: 600; }
+.project-item .proj-delete { display: none; font-size: 10px; color: var(--text-secondary); cursor: pointer; padding: 2px 4px; }
+.project-item:hover .proj-delete { display: inline; }
+.project-item .proj-delete:hover { color: var(--danger); }
 </style>
 </head>
 <body>
 <div id="app">
-  <div id="project-bar" style="display:flex; align-items:center; gap:8px; padding:8px 16px; background:var(--bg); border-bottom:1px solid var(--border);">
-    <span style="font-size:12px; color:var(--text-secondary);">📁 项目:</span>
-    <select id="project-selector" onchange="switchProject(this.value)" style="padding:4px 8px; border:1px solid var(--border); border-radius:4px; font-size:12px; min-width:150px;"></select>
-    <button class="btn btn-ghost" style="padding:2px 8px; font-size:11px;" onclick="newProject()">+ 新建</button>
-    <button class="btn btn-ghost" style="padding:2px 8px; font-size:11px;" onclick="deleteProject()" title="删除当前项目">🗑️</button>
-  </div>
+  <div style="display:flex; flex:1; overflow:hidden;">
+    <!-- 左侧项目侧边栏 -->
+    <div id="project-sidebar" style="width:180px; flex-shrink:0; background:var(--card-bg); border-right:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden;">
+      <div style="padding:12px; border-bottom:1px solid var(--border); font-weight:600; font-size:13px; display:flex; justify-content:space-between; align-items:center;">
+        📁 项目
+        <button class="btn btn-ghost" style="padding:2px 6px; font-size:10px;" onclick="newProject()" title="新建项目">+</button>
+      </div>
+      <div id="project-list" style="flex:1; overflow:auto; padding:4px;"></div>
+      <div style="padding:8px; border-top:1px solid var(--border); font-size:10px; color:var(--text-secondary); text-align:center;">
+        <span id="project-count">0 个项目</span>
+      </div>
+    </div>
+    <!-- 右侧主内容区 -->
+    <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
   <nav id="tabs">
     <button class="tab" data-tab="overview">🏠 概览</button>
     <button class="tab active" data-tab="metrics">📦 Metric 库</button>
@@ -1112,16 +1128,24 @@ async function downloadSkillZip() {
 // ============================================================
 // 项目管理
 // ============================================================
-function renderProjectSelector() {
-  const sel = document.getElementById('project-selector');
-  if (!sel) return;
-  sel.innerHTML = projectList.map(p => `<option value="${p}" ${p===currentProject?'selected':''}>${p}</option>`).join('');
+function renderProjectSidebar() {
+  const list = document.getElementById('project-list');
+  if (!list) return;
+  list.innerHTML = projectList.map(p => `
+    <div class="project-item ${p===currentProject?'active':''}" onclick="switchProject('${p}')">
+      <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${p}</span>
+      <span class="proj-delete" onclick="event.stopPropagation(); deleteProject('${p}')" title="删除">✕</span>
+    </div>
+  `).join('');
+  const cnt = document.getElementById('project-count');
+  if (cnt) cnt.textContent = `${projectList.length} 个项目`;
 }
 function switchProject(proj) {
   currentProject = proj;
   localStorage.setItem('deepeval_current_project', proj);
   MetricStore.reload();
   loadCanvasConfig();
+  renderProjectSidebar();
   renderMetricLibrary();
   renderCanvas();
   renderExportTab();
@@ -1136,19 +1160,27 @@ function newProject() {
   MetricStore.reload();
   initPresetMetrics();
   loadCanvasConfig();
-  renderProjectSelector();
+  renderProjectSidebar();
   renderMetricLibrary();
   renderCanvas();
   renderExportTab();
 }
-function deleteProject() {
+function deleteProject(proj) {
   if (projectList.length <= 1) { alert('至少保留一个项目'); return; }
-  if (!confirm(`确定删除项目 "${currentProject}"？\n其所有指标和管线配置将被清除。`)) return;
-  ['metrics', 'canvas_fields', 'canvas_active', 'canvas_global'].forEach(k => localStorage.removeItem(_pk(k)));
-  projectList = projectList.filter(p => p !== currentProject); _saveProjects(projectList);
-  currentProject = projectList[0]; localStorage.setItem('deepeval_current_project', currentProject);
+  if (!confirm(`确定删除项目 "${proj}"？\n其所有指标和管线配置将被清除。`)) return;
+  ['metrics', 'canvas_fields', 'canvas_active', 'canvas_global'].forEach(k => {
+    const old = currentProject;
+    currentProject = proj;
+    localStorage.removeItem(_pk(k));
+    currentProject = old;
+  });
+  projectList = projectList.filter(p => p !== proj); _saveProjects(projectList);
+  if (currentProject === proj) {
+    currentProject = projectList[0];
+    localStorage.setItem('deepeval_current_project', currentProject);
+  }
   MetricStore.reload(); loadCanvasConfig();
-  renderProjectSelector();
+  renderProjectSidebar();
   renderMetricLibrary();
   renderCanvas();
   renderExportTab();
@@ -1989,7 +2021,7 @@ function _reportChangePage(tableId, newPage) {
 
 // 页面初始化
 document.addEventListener('DOMContentLoaded', () => {
-  renderProjectSelector();
+  renderProjectSidebar();
   MetricStore.reload();
   initPresetMetrics();
   loadCanvasConfig();
@@ -1998,5 +2030,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderExportTab();
 });
 </script>
+    </div><!-- end main content -->
+  </div><!-- end flex row -->
 </body>
 </html>
