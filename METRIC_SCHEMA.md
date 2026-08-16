@@ -196,13 +196,13 @@ python scripts/publish_metric.py --check --metric data/metrics/llm/empathy.json
 
 # 2. 通过后发布
 python scripts/publish_metric.py --publish --metric data/metrics/llm/empathy.json \
-  --repo https://github.com/your-org/evalplatform-metrics.git
+  --repo https://github.com/<your-org>/evalplatform-metrics.git
 ```
 
 ### 发现（拉取共享指标）
 
 ```bash
 python scripts/publish_metric.py --discover \
-  --repo https://github.com/your-org/evalplatform-metrics.git \
+  --repo https://github.com/<your-org>/evalplatform-metrics.git \
   --target data/metrics/
 ```

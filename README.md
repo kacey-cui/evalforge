@@ -102,11 +102,11 @@ evalplatform/
 # 发布到共享仓库（带查重）
 python scripts/publish_metric.py publish \
   --metric data/metrics/llm/empathy.json \
-  --repo https://github.com/your-org/evalplatform-metrics.git
+  --repo https://github.com/<your-org>/evalplatform-metrics.git
 
 # 拉取共享指标
 python scripts/publish_metric.py discover \
-  --repo https://github.com/your-org/evalplatform-metrics.git \
+  --repo https://github.com/<your-org>/evalplatform-metrics.git \
   --target data/metrics/
 ```
 

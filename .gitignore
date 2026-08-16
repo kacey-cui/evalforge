@@ -10,3 +10,10 @@ venv/
 
 # 不追踪 git_bridge 的 PID 文件
 *.pid
+
+# deepeval 运行时缓存
+.deepeval/
+
+# 本地备份
+.backup/
+*.bundle
