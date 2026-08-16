@@ -1,8 +1,8 @@
 # EvalPlatform 🧩
 
-**拖拽式 LLM-as-Judge 评测平台** —— 把写评测代码，变成搭积木。
+**Agent 原生的 LLM-as-Judge 评测平台** —— 拖拽编排评测管线，也能让 Agent 直接操作平台。
 
-> **平台做设计，Agent 做执行。** 可视化编排 [Deepeval](https://github.com/confident-ai/deepeval) 评测管线，一键导出 Skill，交给本地 Agent 跑评测、出报告。
+> 平台做设计，Agent 做执行。底层是 [Deepeval](https://github.com/confident-ai/deepeval)，导出为可复用的 Skill。
 
 [English](README.md) · [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -10,17 +10,35 @@
 
 ## 为什么做这个
 
-LLM-as-Judge（用大模型当评委）是当下最靠谱的模型评测方式，但 `deepeval` 这类框架需要写 Python，对产品、测试等非工程同学很不友好。
+LLM-as-Judge（用大模型当评委）是当下最靠谱的模型评测方式，但 `deepeval` 这类框架需要写 Python——对**没接触过 Python 的人**来说是一道实实在在的门槛。
 
-做 EvalPlatform 的出发点很简单：**评测里的指标、权重、阈值、门禁这些配置，本来就长得像拖拽界面——那为什么不干脆做成拖拽呢？**
+与此同时，AI 时代随手写一套自己的评测脚本、或拼一个 Skill 太容易了。相比起来，去啃别人的框架反而更费劲，于是人们很自然地绕开那些需要写代码的框架。
 
-想解决三件事：
+但「Skill 堆 Skill」是有隐性代价的：**评测工程会越来越不稳定**——指标口径漂移、没有统一契约、没有版本、没法对比。EvalPlatform 想做的就是**降低这个学习成本：让人在一个框架里工作，底层是成熟的 deepeval**。
 
-1. **可视化优先**：指标、权重、阈值、门禁都拖拽完成，不写代码。
-2. **Skill 传输**：配置好的评测管线沉淀为一个可复用的 **Skill**，下载到本地、交给任何 Agent 执行。
-3. **UI 与 Agent 等价**：同一套 JSON 契约，可以全程点鼠标，也可以全程让 Agent 读写文件自动完成。
+---
 
-**核心洞察**：平台负责「设计」，Agent 负责「执行」，两者通过标准 Schema 互通。可视化 UI 只是备选入口，不是唯一入口。
+## Agent 原生，而不只是可视化
+
+真正的目标不是把 UI 做得更好看，而是：在 AI 时代，真正重要的「用户」是 **Agent**。
+
+人机交互经历了三个阶段：
+
+- **CLI** —— 终端时代：人敲命令行。
+- **GUI** —— 个人电脑时代：普通人有了图形界面。
+- **ANI（Agent-Native Interface，Agent 原生接口）** —— AI 时代：Agent 应该能**直接**操作系统。
+
+现在人们已经懒得点网页，干脆让 Agent 用 Playwright 去干。但用浏览器自动化去驱动 GUI，本质是个别扭的补丁——又脆又慢，不是未来该有的样子。
+
+EvalPlatform 从一开始就是** Agent 原生**设计的：它真正的接口不是网页，而是一套 JSON Schema、文件、Skill。Agent 可以直接生成指标、配置管线、跑评测、记录 Run，**全程不用打开浏览器**。网页 UI 只是同一份契约的一个客户端，给人用的。
+
+---
+
+## 轻量化
+
+- **零构建、零框架** —— 一个 `index.html` + 几个小 Python 脚本。没有 npm、没有打包器、没有前端框架。
+- **Git-native** —— 没有数据库。Run、历史、对比就是 git commit 和 tag。
+- **引擎在本地** —— deepeval 在你本地跑，不在平台里。平台不绑架你的运行环境。
 
 ---
 
@@ -58,14 +76,14 @@ bash serve.sh
                          记录 Run → 回平台看历史/对比/图表
 ```
 
-### 两种使用方式
+### 两种使用方式，同一份契约
 
 | 方式 | 适合 | 入口 |
 |------|------|------|
-| 🖱️ **Web UI** | 想拖拽、想直观 | `bash serve.sh` 后打开网页 |
-| 🤖 **Agent 全自动** | 想自动化、批量 | 安装 `skills/evalplatform-orchestrator/` Skill，读写文件即可 |
+| 🖱️ **Web UI** | 人、想直观 | `bash serve.sh` 后打开网页 |
+| 🤖 **Agent 原生** | Agent、自动化、批量 | 安装 `skills/evalplatform-orchestrator/`，直接读写文件 |
 
-两者操作同一套 JSON 契约（`METRIC_SCHEMA.md` / `REPORT_SCHEMA.md`），完全等价。
+两者操作同一套 JSON 契约（`METRIC_SCHEMA.md` / `REPORT_SCHEMA.md`），不需要浏览器自动化。
 
 ---
 
@@ -78,6 +96,7 @@ bash serve.sh
 - **报告自动丰富化**：`enrich_report.py` 自动检测 Recall@k / MRR / 域分拆，生成折线图、柱状图、直方图。
 - **指标共享**：`publish_metric.py` 支持发布/发现/查重（ID 冲突拒绝、相似度警告）。
 - **预置 + 自定义指标**：8 个预置开箱即用，也支持继承 `BaseMetric` 自定义。
+- **中英双语 UI**：一键切换。
 
 ---
 
@@ -133,9 +152,9 @@ evalplatform/
 
 ### 远期
 
+- [ ] **更完整的 Agent 原生接口**：把平台契约直接暴露给 Agent（不止是文件），让浏览器自动化彻底不必要
 - [ ] **Tracing 可视化**：把 Deepeval 的 trace/span 树可视化，定位扣分原因
 - [ ] **多用户协作**：项目级权限、共享指标库、共享对比组
-- [ ] **评测即服务**：把 Skill 传输扩展成团队评测生态
 
 > 欢迎提 Issue / PR。有任何想评测的场景，都欢迎来试试"搭积木代替写代码"。
 

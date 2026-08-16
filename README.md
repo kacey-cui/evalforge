@@ -1,8 +1,8 @@
 # EvalPlatform 🧩
 
-**Visual LLM-as-Judge evaluation platform** — build evaluation pipelines by dragging and dropping, not writing code.
+**Agent-native LLM-as-Judge platform** — compose evaluation pipelines by dragging and dropping, and let Agents operate the platform directly.
 
-> **The platform designs, the Agent executes.** Visually compose [Deepeval](https://github.com/confident-ai/deepeval) evaluation pipelines, export them as a Skill, and let a local Agent run the evaluation and produce reports.
+> The platform designs, the Agent executes. Built on [Deepeval](https://github.com/confident-ai/deepeval), exported as reusable Skills.
 
 [中文文档](README.zh-CN.md) · [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -10,17 +10,35 @@
 
 ## Why EvalPlatform?
 
-LLM-as-Judge — using an LLM to grade another LLM's output — is one of the most reliable ways to evaluate models today. But frameworks like Deepeval require writing Python, which raises the barrier for product managers, QA, and other non-engineers.
+LLM-as-Judge — using an LLM to grade another LLM's output — is one of the most reliable ways to evaluate models today. But frameworks like Deepeval require writing Python, which is a real barrier for anyone who has never touched Python.
 
-EvalPlatform started from a simple observation: *evaluation configs — metrics, weights, thresholds, gates — already read like a drag-and-drop interface. So why not make it one?*
+Meanwhile, in the AI era it has become trivially easy to spin up your own ad-hoc eval script or throw together a Skill. Compared with that, reading someone else's framework feels heavy — so people naturally skip frameworks that require code.
 
-Three goals:
+But stacking Skill on Skill has a hidden cost: **evaluation engineering becomes unstable.** Metric definitions drift, there is no shared contract, no versioning, no way to compare runs. EvalPlatform exists to lower that learning cost: **one framework to work in, with mature Deepeval as the engine underneath.**
 
-1. **Visual first** — pick metrics, tune weights/thresholds/gates by drag-and-drop, no code.
-2. **Skill transmission** — a configured pipeline becomes a reusable **Skill** that you download and hand to any local Agent.
-3. **UI ⇄ Agent equivalence** — one JSON contract powers both: click through the UI, or let an Agent read/write files automatically.
+---
 
-The core insight: **the platform designs, the Agent executes**, and they meet through standard schemas. The visual UI is a convenience, not the only entry point.
+## Agent-native, not just visual
+
+The real goal is not a prettier UI — it is that, in the AI era, the important "user" is the **Agent**.
+
+Human-computer interaction has evolved in three stages:
+
+- **CLI** — the terminal era: you typed commands.
+- **GUI** — the personal-computer era: ordinary people got a graphical interface.
+- **ANI (Agent-Native Interface)** — the AI era: Agents should be able to operate a system *directly*.
+
+Today people are already too lazy to click through a UI and hand the job to an Agent via Playwright. But driving a GUI through browser automation is a brittle hack — slow, fragile, and not how the future should work.
+
+EvalPlatform is built **Agent-native** from the ground up. Its real interface is not the web page — it is a set of JSON schemas, files, and Skills. An Agent can generate metrics, configure pipelines, run evaluations, and record runs without ever opening a browser. The web UI is just *one client* of that same contract, for humans.
+
+---
+
+## Lightweight by design
+
+- **Zero build, zero framework** — a single `index.html` plus a few small Python scripts. No npm, no bundler, no front-end framework.
+- **Git-native** — no database. Runs, history, and diffs are just git commits and tags.
+- **Engine stays on your machine** — Deepeval runs locally, not inside the platform. The platform never locks you into a runtime.
 
 ---
 
@@ -58,14 +76,14 @@ export Skill zip                    run deepeval → report
                                     record Run → view history/diff/charts
 ```
 
-### Two ways to use it
+### Two ways to use it — one contract
 
 | Style | Best for | Entry point |
 |-------|----------|-------------|
-| 🖱️ **Web UI** | visual, exploratory | `bash serve.sh` then open the browser |
-| 🤖 **Agent automation** | automated, batch | install `skills/evalplatform-orchestrator/` and let it read/write files |
+| 🖱️ **Web UI** | humans, visual exploration | `bash serve.sh` then open the browser |
+| 🤖 **Agent-native** | Agents, automation, batch | install `skills/evalplatform-orchestrator/` and let it read/write files directly |
 
-Both drive the same JSON contracts (`METRIC_SCHEMA.md` / `REPORT_SCHEMA.md`) — fully equivalent.
+Both drive the same JSON contracts (`METRIC_SCHEMA.md` / `REPORT_SCHEMA.md`). No browser automation required.
 
 ---
 
@@ -78,6 +96,7 @@ Both drive the same JSON contracts (`METRIC_SCHEMA.md` / `REPORT_SCHEMA.md`) —
 - **Auto-enriched reports** — `enrich_report.py` detects Recall@k / MRR / domain breakdowns and generates line/bar/histogram charts.
 - **Metric sharing** — `publish_metric.py` supports publish/discover with duplicate detection (ID conflict → reject, similarity → warn).
 - **Presets + custom metrics** — 8 presets out of the box, plus custom metrics by subclassing `BaseMetric`.
+- **Bilingual UI** — Chinese & English, one-click toggle.
 
 ---
 
@@ -133,9 +152,9 @@ evalplatform/
 
 ### Long term
 
+- [ ] **A richer Agent-native interface** — expose the platform contract directly to Agents (beyond files), so no browser automation is ever needed
 - [ ] **Tracing visualization** — visualize Deepeval trace/span trees to pinpoint score reasons
 - [ ] **Multi-user collaboration** — per-project permissions, shared metric library, shared groups
-- [ ] **Evaluation-as-a-service** — turn Skill transmission into a team evaluation ecosystem
 
 > Issues & PRs welcome. If you have something to evaluate, come try "building blocks instead of code".
 
