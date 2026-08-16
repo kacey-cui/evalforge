@@ -28,6 +28,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .tab { padding: 8px 20px; border: none; background: none; cursor: pointer; border-radius: 6px; font-size: 14px; color: var(--text-secondary); }
 .tab:hover { background: var(--bg); }
 .tab.active { background: var(--primary); color: white; }
+#lang-toggle:hover { background: var(--bg); }
 
 /* 内容区 */
 .tab-content { display: none; flex: 1; overflow: auto; padding: 20px; }
@@ -85,24 +86,25 @@ label { font-size: 12px; color: var(--text-secondary); display: block; margin-bo
     <!-- 左侧项目侧边栏 -->
     <div id="project-sidebar" style="width:180px; flex-shrink:0; background:var(--card-bg); border-right:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden;">
       <div style="padding:12px; border-bottom:1px solid var(--border); font-weight:600; font-size:13px; display:flex; justify-content:space-between; align-items:center;">
-        📁 项目
-        <button class="btn btn-ghost" style="padding:2px 6px; font-size:10px;" onclick="newProject()" title="新建项目">+</button>
+        <span id="project-sidebar-title"></span>
+        <button id="new-project-btn" class="btn btn-ghost" style="padding:2px 6px; font-size:10px;" onclick="newProject()">+</button>
       </div>
       <div id="project-list" style="flex:1; overflow:auto; padding:4px;"></div>
       <div style="padding:8px; border-top:1px solid var(--border); font-size:10px; color:var(--text-secondary); text-align:center;">
-        <span id="project-count">0 个项目</span>
+        <span id="project-count"></span>
       </div>
     </div>
     <!-- 右侧主内容区 -->
     <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
   <nav id="tabs">
-    <button class="tab" data-tab="overview">🏠 概览</button>
-    <button class="tab active" data-tab="metrics">📦 Metric 库</button>
-    <button class="tab" data-tab="canvas">🎨 Canvas 编排</button>
-    <button class="tab" data-tab="export">📥 导出 Skill</button>
-    <button class="tab" data-tab="history">🕐 Run 历史</button>
-    <button class="tab" data-tab="compare">🔀 对比</button>
-    <button class="tab" data-tab="report">📊 报告</button>
+    <button class="tab" data-tab="overview"></button>
+    <button class="tab active" data-tab="metrics"></button>
+    <button class="tab" data-tab="canvas"></button>
+    <button class="tab" data-tab="export"></button>
+    <button class="tab" data-tab="history"></button>
+    <button class="tab" data-tab="compare"></button>
+    <button class="tab" data-tab="report"></button>
+    <button id="lang-toggle" onclick="toggleLang()" style="margin-left:auto; padding:8px 16px; border:1px solid var(--border); background:none; cursor:pointer; border-radius:6px; font-size:13px; color:var(--text-secondary);">🌐 EN</button>
   </nav>
   <div id="tab-overview" class="tab-content"></div>
   <div id="tab-metrics" class="tab-content active"></div>
@@ -115,6 +117,244 @@ label { font-size: 12px; color: var(--text-secondary); display: block; margin-bo
 <div id="metric-form-overlay"></div>
 
 <script>
+// ===== i18n =====
+const I18N_EN = {
+  // 项目侧边栏 / 导航
+  '📁 项目': '📁 Projects',
+  '新建项目': 'New Project',
+  'N 个项目': 'N projects',
+  '🏠 概览': '🏠 Overview',
+  '📦 Metric 库': '📦 Metric Library',
+  '🎨 Canvas 编排': '🎨 Canvas',
+  '📥 导出 Skill': '📥 Export Skill',
+  '🕐 Run 历史': '🕐 Run History',
+  '🔀 对比': '🔀 Compare',
+  '📊 报告': '📊 Report',
+  // Metric 库
+  'Metric 模板库': 'Metric Template Library',
+  '🔄 刷新': '🔄 Refresh',
+  '↺ 重置': '↺ Reset',
+  '📂 从项目导入': '📂 Import from Project',
+  '+ 新建 Metric': '+ New Metric',
+  '非 LLM Metric': 'Non-LLM Metric',
+  '暂无': 'None',
+  '无参数': 'No params',
+  '参数:': 'Params:',
+  '编辑': 'Edit',
+  '新建': 'New',
+  '名称': 'Name',
+  '如: json_schema': 'e.g. json_schema',
+  '如: JSON Schema 校验': 'e.g. JSON Schema Validation',
+  '分类': 'Category',
+  '非 LLM': 'Non-LLM',
+  '描述': 'Description',
+  'LLM 评分标准': 'LLM Scoring Criteria',
+  '如：评估回答是否准确、完整': 'e.g. evaluate whether the answer is accurate and complete',
+  '参数定义': 'Parameters',
+  '+ 添加参数': '+ Add Parameter',
+  'Python 代码模板': 'Python Code Template',
+  '（导出 Skill 时用）': '(used when exporting the Skill)',
+  '什么是代码模板？': 'What is a code template?',
+  '非 LLM metric：': 'Non-LLM metric:',
+  '填写完整的 Python 类定义（继承 BaseMetric），导出时会替换': 'Fill in a complete Python class definition (extend BaseMetric). On export,',
+  '参数名': 'param_name',
+  '为用户配置的值。': 'will be replaced with the user-configured value.',
+  'LLM metric：': 'LLM metric:',
+  '填写 GEval 调用代码，评委模型自动从全局配置获取，无需在 metric 中指定。': 'Fill in the GEval call code. The judge model is taken automatically from global config — no need to specify it in the metric.',
+  '预置 metric 已填好，无需修改。': 'Preset metrics are already filled in — no need to modify.',
+  '只有新建自定义 metric 时才需要编辑。': 'Only edit when creating a new custom metric.',
+  '取消': 'Cancel',
+  '保存': 'Save',
+  'ID 和名称不能为空': 'ID and name cannot be empty',
+  '显示名': 'Display Name',
+  '默认值': 'Default Value',
+  '必填': 'Required',
+  '确定删除': 'Delete',
+  // Canvas 编排
+  '可用 Metric': 'Available Metrics',
+  '搜索 metric...': 'Search metrics...',
+  '请先在 Metric 库中创建': 'Create some in the Metric Library first',
+  '非LLM': 'Non-LLM',
+  '需要:': 'Requires:',
+  '无': 'None',
+  '(全量)': '(All)',
+  '删除字段': 'Delete field',
+  '+ 新建': '+ New',
+  '📂 从文件加载': '📂 Load from File',
+  '💾 保存到文件': '💾 Save to File',
+  '全局配置': 'Global Config',
+  '模型 API 地址': 'Model API URL',
+  '模型 ID': 'Model ID',
+  '如: your-model-id': 'e.g. your-model-id',
+  'Skill 名称': 'Skill Name',
+  '💾 保存': '💾 Save',
+  '📌 字段': '📌 Field',
+  '字段名（如: diagnosis）': 'Field name (e.g. diagnosis)',
+  '复制此字段的指标配置': "Copy this field's metric config",
+  '📋 复制': '📋 Copy',
+  '🚪 门禁（不通过则停止）': '🚪 Gate (stop if failed)',
+  '拖入门禁 Metric': 'Drag gate metrics here',
+  '📊 打分（加权平均）': '📊 Scoring (weighted average)',
+  '拖入打分 Metric': 'Drag scoring metrics here',
+  '加权 =': 'Weighted =',
+  '均分': 'Equalize',
+  '阈值:': 'threshold:',
+  '至少保留一个字段': 'Keep at least one field',
+  '权重': 'Weight',
+  '严格度 (0.2=宽松, 5=严格)': 'Strictness (0.2=lenient, 5=strict)',
+  '门禁参数': 'Gate params',
+  '打分参数': 'Score params',
+  '此 metric 无参数': 'This metric has no params',
+  '应用': 'Apply',
+  '启用': 'Enabled',
+  '已刷新，加载 N 个 metric': 'Refreshed, loaded N metrics',
+  '确定重置？这将清除当前项目的所有自定义 metric。': 'Reset? This will clear all custom metrics in the current project.',
+  // 导出 Skill
+  '门禁:': 'Gate:',
+  '打分:': 'Score:',
+  '导出 Skill': 'Export Skill',
+  '📥 下载 Skill Zip': '📥 Download Skill Zip',
+  '评测管线预览': 'Evaluation Pipeline Preview',
+  'eval_script.py 预览': 'eval_script.py Preview',
+  '请先在 Canvas 中添加 Metric': 'Please add Metrics in Canvas first',
+  // 项目 / 概览 / 历史
+  '删除': 'Delete',
+  '项目名称：': 'Project name:',
+  '项目已存在': 'Project already exists',
+  '至少保留一个项目': 'Keep at least one project',
+  '确定删除项目': 'Delete project',
+  '其所有指标和管线配置将被清除。': 'All its metrics and pipeline configs will be cleared.',
+  '⏳ 加载中...': '⏳ Loading...',
+  '当前编排配置': 'Current Canvas Config',
+  '尚未配置字段，去 Canvas 编排开始吧。': 'No fields configured yet. Go to Canvas to get started.',
+  'N 个字段 · M 个 Metric': 'N fields · M metrics',
+  '(未命名)': '(Unnamed)',
+  '门禁': 'Gate',
+  '打分': 'Score',
+  '去 Canvas 编排 →': 'Go to Canvas →',
+  '最近一次 Run': 'Latest Run',
+  '时间:': 'Time:',
+  '总分:': 'Total score:',
+  '状态:': 'Status:',
+  '触发:': 'Triggered by:',
+  '暂无 Run 历史': 'No Run history yet',
+  '快捷操作': 'Quick Actions',
+  '🕐 查看完整 Run 历史': '🕐 View Full Run History',
+  '🔀 对比视图': '🔀 Compare View',
+  '暂无 Run 历史。<br>先导出 Skill 让 Agent 跑一次评测吧。': 'No Run history yet.<br>Export a Skill and let the Agent run an evaluation first.',
+  'N 条': 'N runs',
+  '🗂️ 创建对比组': '🗂️ Create Comparison Group',
+  '时间': 'Time',
+  '总分': 'Total Score',
+  '状态': 'Status',
+  '触发': 'Trigger',
+  '操作': 'Actions',
+  '详情': 'Details',
+  '加载中...': 'Loading...',
+  '已选 N 条': 'Selected N',
+  '加载失败': 'Load failed',
+  '模型:': 'Model:',
+  '总 Metric:': 'Total Metrics:',
+  '数据集 SHA256前8位:': 'Dataset SHA256 (first 8):',
+  '确定删除 Run': 'Delete Run',
+  '（软删除，git 历史仍然保留）': '(soft delete; git history is preserved)',
+  '已软删除': 'soft-deleted',
+  '❌ 删除失败': '❌ Delete failed',
+  '至少选2个 Run': 'Select at least 2 Runs',
+  '对比组名称（如：换模型对比）：': 'Comparison group name (e.g. model swap):',
+  '✅ 对比组': '✅ Comparison group',
+  '创建成功': 'created successfully',
+  '❌ 创建失败': '❌ Create failed',
+  // 对比 / 报告
+  '分': ' pts',
+  '对比组': 'Group',
+  '个Run': 'runs',
+  '基准 Run A': 'Baseline Run A',
+  '-- 选择 Run --': '-- Select Run --',
+  '对比 Run B': 'Compare Run B',
+  '🔍 对比': '🔍 Compare',
+  '或从对比组快速加载': 'Or load from a comparison group',
+  '-- 选择对比组 --': '-- Select Group --',
+  '对比组至少需要2个Run': 'A comparison group needs at least 2 runs',
+  '请选择两个 Run': 'Please select two Runs',
+  '请选择不同的 Run': 'Please select different Runs',
+  '⏳ 对比中...': '⏳ Comparing...',
+  '❌ 对比失败，请确认 git_bridge 正在运行': '❌ Compare failed, please make sure git_bridge is running',
+  '变化:': 'Change:',
+  '✅ 配置无变化': '✅ No config changes',
+  '配置项': 'Config Item',
+  'Run A (变更前)': 'Run A (before)',
+  'Run B (变更后)': 'Run B (after)',
+  '📊 总分对比': '📊 Total Score Comparison',
+  '📈 字段分数对比': '📈 Field Score Comparison',
+  '🗂️ 数据集对比': '🗂️ Dataset Comparison',
+  '✅ 两次 Run 使用相同数据集（SHA256 一致）': '✅ Both Runs use the same dataset (SHA256 matches)',
+  '⚠️ 数据集不同': '⚠️ Datasets differ',
+  'sha256前8位:': 'sha256 first 8:',
+  '⚙️ 配置变更': '⚙️ Config Changes',
+  '未知图表类型:': 'Unknown chart type:',
+  '无数据': 'No data',
+  '条': ' cases',
+  '⏳ 加载报告中...': '⏳ Loading report...',
+  '📊 评测报告': '📊 Evaluation Report',
+  '暂无报告数据。请先用 Agent 跑一次评测并执行 record_run。': 'No report data yet. Run an evaluation with the Agent and execute record_run first.',
+  '通过率': 'Pass rate',
+  '图表分析': 'Charts',
+  '数据明细': 'Data Details',
+  '← 上一页': '← Previous',
+  '（共 N 条）': '(N total)',
+  '下一页 →': 'Next →',
+  '共 N 条': 'N total',
+  // 文件导入 / 保存提示
+  '📂 项目': '📂 Project',
+  '没有找到文件系统 Metrics。': 'has no filesystem Metrics.',
+  '请确认': 'Please make sure the',
+  '目录下有 JSON 文件，且 git_bridge 正在运行（端口 8081）。': 'directory contains JSON files, and that git_bridge is running (port 8081).',
+  '✅ 导入完成': '✅ Import complete',
+  '导入: N 个 Metric': 'Imported: N Metrics',
+  '跳过: N 个（格式不合法）': 'Skipped: N (invalid format)',
+  '📂 未找到': '📂 Not found:',
+  '请先用 Agent 生成 canvas.json，或在 Canvas 编排里配置后点': 'Please generate canvas.json with the Agent first, or configure it in Canvas and click',
+  '保存到文件': 'Save to File',
+  '。': '.',
+  '✅ 已从文件系统加载 Canvas 配置': '✅ Canvas config loaded from filesystem',
+  '字段数:': 'Fields:',
+  '✅ 已保存到文件系统:': '✅ Saved to filesystem:',
+  '❌ 保存失败，请确认 git_bridge 正在运行': '❌ Save failed, please make sure git_bridge is running',
+  '❌ 连接 git_bridge 失败（端口 8081）。请先运行 bash serve.sh': '❌ Failed to connect to git_bridge (port 8081). Run bash serve.sh first',
+};
+let _lang = localStorage.getItem('evalplatform_lang') || 'zh';
+function t(s) { return (_lang === 'zh' || !(s in I18N_EN)) ? s : I18N_EN[s]; }
+const TAB_TEXT = {
+  overview: '🏠 概览',
+  metrics: '📦 Metric 库',
+  canvas: '🎨 Canvas 编排',
+  export: '📥 导出 Skill',
+  history: '🕐 Run 历史',
+  compare: '🔀 对比',
+  report: '📊 报告',
+};
+function toggleLang() {
+  _lang = (_lang === 'zh') ? 'en' : 'zh';
+  localStorage.setItem('evalplatform_lang', _lang);
+  _applyStaticLang();
+  const active = document.querySelector('.tab.active');
+  if (active) active.click();
+  renderProjectSidebar();
+}
+function _applyStaticLang() {
+  const btn = document.getElementById('lang-toggle');
+  if (btn) btn.textContent = (_lang === 'zh') ? '🌐 EN' : '🌐 中文';
+  document.querySelectorAll('#tabs .tab[data-tab]').forEach(b => {
+    const zh = TAB_TEXT[b.dataset.tab];
+    if (zh) b.textContent = t(zh);
+  });
+  const sbTitle = document.getElementById('project-sidebar-title');
+  if (sbTitle) sbTitle.textContent = t('📁 项目');
+  const npBtn = document.getElementById('new-project-btn');
+  if (npBtn) npBtn.title = t('新建项目');
+}
+
 // ============================================================
 // 项目管理
 // ============================================================
@@ -217,22 +457,22 @@ function renderMetricLibrary() {
   container.innerHTML = `
     <div style="display:flex; flex-direction:column; gap:20px; width:100%;">
       <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h2>Metric 模板库</h2>
+        <h2>${t('Metric 模板库')}</h2>
         <div style="display:flex; gap:8px;">
-          <button class="btn btn-ghost" onclick="refreshMetrics()" style="font-size:12px;">🔄 刷新</button>
-          <button class="btn btn-ghost" onclick="resetMetrics()" style="font-size:12px;">↺ 重置</button>
-          <button class="btn btn-ghost" onclick="importProjectMetrics()" style="font-size:12px;">📂 从项目导入</button>
-          <button class="btn btn-primary" onclick="showMetricForm()">+ 新建 Metric</button>
+          <button class="btn btn-ghost" onclick="refreshMetrics()" style="font-size:12px;">${t('🔄 刷新')}</button>
+          <button class="btn btn-ghost" onclick="resetMetrics()" style="font-size:12px;">${t('↺ 重置')}</button>
+          <button class="btn btn-ghost" onclick="importProjectMetrics()" style="font-size:12px;">${t('📂 从项目导入')}</button>
+          <button class="btn btn-primary" onclick="showMetricForm()">${t('+ 新建 Metric')}</button>
         </div>
       </div>
       <div id="metric-list">
-        <h3 style="color:var(--text-secondary); margin-bottom:12px;">非 LLM Metric <span class="badge badge-non-llm">${nonLlm.length}</span></h3>
+        <h3 style="color:var(--text-secondary); margin-bottom:12px;">${t('非 LLM Metric')} <span class="badge badge-non-llm">${nonLlm.length}</span></h3>
         <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:12px;">
-          ${nonLlm.length ? nonLlm.map(m => metricCard(m)).join('') : '<div style="color:var(--text-secondary);">暂无</div>'}
+          ${nonLlm.length ? nonLlm.map(m => metricCard(m)).join('') : `<div style="color:var(--text-secondary);">${t('暂无')}</div>`}
         </div>
         <h3 style="color:var(--text-secondary); margin:20px 0 12px;">LLM Metric <span class="badge badge-llm">${llm.length}</span></h3>
         <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:12px;">
-          ${llm.length ? llm.map(m => metricCard(m)).join('') : '<div style="color:var(--text-secondary);">暂无</div>'}
+          ${llm.length ? llm.map(m => metricCard(m)).join('') : `<div style="color:var(--text-secondary);">${t('暂无')}</div>`}
         </div>
       </div>
     </div>
@@ -242,7 +482,7 @@ function renderMetricLibrary() {
 async function importProjectMetrics() {
   const metrics = await _fetchBridge(`/api/projects/${encodeURIComponent(currentProject)}/metrics`);
   if (!metrics || !Array.isArray(metrics) || metrics.length === 0) {
-    alert(`📂 项目 "${currentProject}" 没有找到文件系统 Metrics。\n\n请确认 data/projects/${currentProject}/metrics/ 目录下有 JSON 文件，且 git_bridge 正在运行（端口 8081）。`);
+    alert(`${t('📂 项目')} "${currentProject}" ${t('没有找到文件系统 Metrics。')}\n\n${t('请确认')} data/projects/${currentProject}/metrics/ ${t('目录下有 JSON 文件，且 git_bridge 正在运行（端口 8081）。')}`);
     return;
   }
 
@@ -261,14 +501,14 @@ async function importProjectMetrics() {
     }
   }
 
-  alert(`✅ 导入完成\n导入: ${imported} 个 Metric\n跳过: ${skipped} 个（格式不合法）`);
+  alert(`${t('✅ 导入完成')}\n${t('导入: N 个 Metric').replace('N', imported)}\n${t('跳过: N 个（格式不合法）').replace('N', skipped)}`);
   renderMetricLibrary();
 }
 
 async function loadCanvasFromFile() {
   const canvas = await _fetchBridge(`/api/projects/${encodeURIComponent(currentProject)}/canvas`);
   if (!canvas || canvas.error) {
-    alert(`📂 未找到 data/projects/${currentProject}/canvas.json\n\n请先用 Agent 生成 canvas.json，或在 Canvas 编排里配置后点"保存到文件"。`);
+    alert(`${t('📂 未找到')} data/projects/${currentProject}/canvas.json\n\n${t('请先用 Agent 生成 canvas.json，或在 Canvas 编排里配置后点')} "${t('保存到文件')}"${t('。')}`);
     return;
   }
 
@@ -284,7 +524,7 @@ async function loadCanvasFromFile() {
   // 持久化到 localStorage
   saveCanvasConfig();
 
-  alert(`✅ 已从文件系统加载 Canvas 配置\n字段数: ${canvasFields.length}`);
+  alert(`${t('✅ 已从文件系统加载 Canvas 配置')}\n${t('字段数:')} ${canvasFields.length}`);
   renderCanvas();
 }
 
@@ -305,17 +545,17 @@ async function saveCanvasToFile() {
     });
     if (res.ok) {
       const result = await res.json();
-      alert(`✅ 已保存到文件系统: ${result.path}`);
+      alert(`${t('✅ 已保存到文件系统:')} ${result.path}`);
     } else {
-      alert('❌ 保存失败，请确认 git_bridge 正在运行');
+      alert(t('❌ 保存失败，请确认 git_bridge 正在运行'));
     }
   } catch (e) {
-    alert('❌ 连接 git_bridge 失败（端口 8081）。请先运行 bash serve.sh');
+    alert(t('❌ 连接 git_bridge 失败（端口 8081）。请先运行 bash serve.sh'));
   }
 }
 
 function metricCard(m) {
-  const paramList = (m.params || []).map(p => `${p.label}: ${p.type}`).join(', ') || '无参数';
+  const paramList = (m.params || []).map(p => `${p.label}: ${p.type}`).join(', ') || t('无参数');
   return `
     <div class="card" draggable="true" data-metric-id="${m.id}" ondragstart="onMetricDragStart(event)">
       <div style="display:flex; justify-content:space-between; align-items:start;">
@@ -329,7 +569,7 @@ function metricCard(m) {
         </div>
       </div>
       <p style="font-size:13px; color:var(--text-secondary); margin:6px 0;">${escapeHtml(m.description || '')}</p>
-      <p style="font-size:12px; color:var(--text-secondary);">参数: ${escapeHtml(paramList)}</p>
+      <p style="font-size:12px; color:var(--text-secondary);">${t('参数:')} ${escapeHtml(paramList)}</p>
     </div>`;
 }
 
@@ -348,53 +588,53 @@ function showMetricForm(editId) {
   overlay.style.display = 'flex';
   overlay.innerHTML = `
     <div class="card" style="width:600px; max-height:85vh; overflow:auto;">
-      <h3>${isEdit ? '编辑' : '新建'} Metric</h3>
+      <h3>${isEdit ? t('编辑') : t('新建')} Metric</h3>
       <form id="metric-form" style="display:flex; flex-direction:column; gap:12px; margin-top:12px;">
         <div>
           <label>ID <span style="color:var(--danger);">*</span></label>
-          <input name="id" value="${escapeHtml(data.id)}" ${isEdit ? 'readonly' : ''} required placeholder="如: json_schema"
+          <input name="id" value="${escapeHtml(data.id)}" ${isEdit ? 'readonly' : ''} required placeholder="${t('如: json_schema')}"
             style="width:100%; padding:8px; border:1px solid var(--border); border-radius:4px;">
         </div>
         <div>
-          <label>名称 <span style="color:var(--danger);">*</span></label>
-          <input name="name" value="${escapeHtml(data.name)}" required placeholder="如: JSON Schema 校验"
+          <label>${t('名称')} <span style="color:var(--danger);">*</span></label>
+          <input name="name" value="${escapeHtml(data.name)}" required placeholder="${t('如: JSON Schema 校验')}"
             style="width:100%; padding:8px; border:1px solid var(--border); border-radius:4px;">
         </div>
         <div>
-          <label>分类</label>
+          <label>${t('分类')}</label>
           <select name="category" style="width:100%; padding:8px; border:1px solid var(--border); border-radius:4px;">
-            <option value="non_llm" ${data.category==='non_llm'?'selected':''}>非 LLM</option>
+            <option value="non_llm" ${data.category==='non_llm'?'selected':''}>${t('非 LLM')}</option>
             <option value="llm" ${data.category==='llm'?'selected':''}>LLM (GEval)</option>
           </select>
         </div>
         <div>
-          <label>描述</label>
+          <label>${t('描述')}</label>
           <textarea name="description" rows="2" style="width:100%; padding:8px; border:1px solid var(--border); border-radius:4px;">${escapeHtml(data.description)}</textarea>
         </div>
         <div class="llm-only-field" ${data.category==='llm'?'':'style="display:none;"'}>
-          <label>LLM 评分标准</label>
-          <textarea name="criteria" rows="2" placeholder="如：评估回答是否准确、完整" style="width:100%; padding:8px; border:1px solid var(--border); border-radius:4px;">${escapeHtml(data.criteria || '')}</textarea>
+          <label>${t('LLM 评分标准')}</label>
+          <textarea name="criteria" rows="2" placeholder="${t('如：评估回答是否准确、完整')}" style="width:100%; padding:8px; border:1px solid var(--border); border-radius:4px;">${escapeHtml(data.criteria || '')}</textarea>
         </div>
         <div>
-          <label>参数定义</label>
+          <label>${t('参数定义')}</label>
           <div id="params-editor" style="display:flex; flex-direction:column; gap:4px;"></div>
-          <button type="button" class="btn btn-ghost" style="margin-top:4px; font-size:12px;" onclick="addParamField()">+ 添加参数</button>
+          <button type="button" class="btn btn-ghost" style="margin-top:4px; font-size:12px;" onclick="addParamField()">${t('+ 添加参数')}</button>
         </div>
         <div>
-          <label>Python 代码模板 <span style="font-weight:normal; color:var(--text-secondary);">（导出 Skill 时用）</span></label>
+          <label>${t('Python 代码模板')} <span style="font-weight:normal; color:var(--text-secondary);">${t('（导出 Skill 时用）')}</span></label>
           <details style="margin-bottom:8px;">
-            <summary style="font-size:12px; color:var(--primary); cursor:pointer;">什么是代码模板？</summary>
+            <summary style="font-size:12px; color:var(--primary); cursor:pointer;">${t('什么是代码模板？')}</summary>
             <div style="font-size:12px; color:var(--text-secondary); padding:8px; background:var(--bg); border-radius:4px; margin-top:4px;">
-              <p><strong>非 LLM metric：</strong>填写完整的 Python 类定义（继承 BaseMetric），导出时会替换 <code v-pre>{{参数名}}</code> 为用户配置的值。</p>
-              <p><strong>LLM metric：</strong>填写 GEval 调用代码，评委模型自动从全局配置获取，无需在 metric 中指定。</p>
-              <p style="margin-top:4px;"><strong>预置 metric 已填好，无需修改。</strong>只有新建自定义 metric 时才需要编辑。</p>
+              <p><strong>${t('非 LLM metric：')}</strong>${t('填写完整的 Python 类定义（继承 BaseMetric），导出时会替换')} <code v-pre>{{${t('参数名')}}}</code> ${t('为用户配置的值。')}</p>
+              <p><strong>${t('LLM metric：')}</strong>${t('填写 GEval 调用代码，评委模型自动从全局配置获取，无需在 metric 中指定。')}</p>
+              <p style="margin-top:4px;"><strong>${t('预置 metric 已填好，无需修改。')}</strong>${t('只有新建自定义 metric 时才需要编辑。')}</p>
             </div>
           </details>
           <textarea name="code_template" rows="6" placeholder="class MyMetric(BaseMetric): ..." style="width:100%; padding:8px; border:1px solid var(--border); border-radius:4px; font-family:monospace; font-size:12px;">${escapeHtml(data.code_template)}</textarea>
         </div>
         <div style="display:flex; gap:8px; justify-content:flex-end;">
-          <button type="button" class="btn btn-ghost" onclick="closeMetricForm()">取消</button>
-          <button type="submit" class="btn btn-primary">保存</button>
+          <button type="button" class="btn btn-ghost" onclick="closeMetricForm()">${t('取消')}</button>
+          <button type="submit" class="btn btn-primary">${t('保存')}</button>
         </div>
       </form>
     </div>
@@ -442,7 +682,7 @@ function showMetricForm(editId) {
       code_template: form.code_template.value,
     };
     if (!newMetric.id || !newMetric.name) {
-      alert('ID 和名称不能为空');
+      alert(t('ID 和名称不能为空'));
       return;
     }
     MetricStore.save(newMetric);
@@ -457,7 +697,7 @@ function createParamRow(param, index) {
   div.style.cssText = 'display:grid; grid-template-columns:1fr 1fr 90px 1fr 50px; gap:4px; align-items:center;';
   div.innerHTML = `
     <input name="param_key" placeholder="key" value="${escapeHtml(param.key || '')}" style="padding:4px; border:1px solid var(--border); border-radius:4px; font-size:12px;">
-    <input name="param_label" placeholder="显示名" value="${escapeHtml(param.label || '')}" style="padding:4px; border:1px solid var(--border); border-radius:4px; font-size:12px;">
+    <input name="param_label" placeholder="${t('显示名')}" value="${escapeHtml(param.label || '')}" style="padding:4px; border:1px solid var(--border); border-radius:4px; font-size:12px;">
     <select name="param_type" style="padding:4px; border:1px solid var(--border); border-radius:4px; font-size:12px;">
       <option value="string" ${param.type==='string'?'selected':''}>string</option>
       <option value="number" ${param.type==='number'?'selected':''}>number</option>
@@ -465,9 +705,9 @@ function createParamRow(param, index) {
       <option value="json" ${param.type==='json'?'selected':''}>json</option>
       <option value="select" ${param.type==='select'?'selected':''}>select</option>
     </select>
-    <input name="param_default" placeholder="默认值" value="${escapeHtml(String(param.default ?? ''))}" style="padding:4px; border:1px solid var(--border); border-radius:4px; font-size:12px;">
+    <input name="param_default" placeholder="${t('默认值')}" value="${escapeHtml(String(param.default ?? ''))}" style="padding:4px; border:1px solid var(--border); border-radius:4px; font-size:12px;">
     <label style="font-size:11px; display:flex; align-items:center; gap:2px; white-space:nowrap;">
-      <input name="param_required" type="checkbox" ${param.required ? 'checked' : ''}> 必填
+      <input name="param_required" type="checkbox" ${param.required ? 'checked' : ''}> ${t('必填')}
     </label>
   `;
   return div;
@@ -485,7 +725,7 @@ function closeMetricForm() {
 }
 
 function deleteMetric(id) {
-  if (confirm(`确定删除 ${id}？`)) {
+  if (confirm(t('确定删除') + ' ' + id + '?')) {
     MetricStore.delete(id);
     renderMetricLibrary();
   }
@@ -507,12 +747,12 @@ function renderCanvas() {
     <div style="display:flex; gap:20px; width:100%; height:100%;">
       <!-- 左侧 Metric 面板 -->
       <div style="width:260px; flex-shrink:0; display:flex; flex-direction:column; gap:8px;">
-        <h3>可用 Metric</h3>
-        <input id="metric-search" type="text" placeholder="搜索 metric..." oninput="filterMetricSidebar()"
+        <h3>${t('可用 Metric')}</h3>
+        <input id="metric-search" type="text" placeholder="${t('搜索 metric...')}" oninput="filterMetricSidebar()"
           style="width:100%; padding:6px 8px; border:1px solid var(--border); border-radius:4px; font-size:13px;">
         <div style="flex:1; overflow:auto; display:flex; flex-direction:column; gap:8px;" id="metric-sidebar">
           ${metrics.length === 0
-            ? '<div style="color:var(--text-secondary);">请先在 Metric 库中创建</div>'
+            ? `<div style="color:var(--text-secondary);">${t('请先在 Metric 库中创建')}</div>`
             : metrics.map(m => `
               <div class="card metric-source" draggable="true"
                    data-metric-id="${m.id}"
@@ -522,10 +762,10 @@ function renderCanvas() {
                    style="cursor:grab; padding:10px;">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                   <strong>${escapeHtml(m.name)}</strong>
-                  <span class="badge ${m.category === 'llm' ? 'badge-llm' : 'badge-non-llm'}">${m.category === 'llm' ? 'LLM' : '非LLM'}</span>
+                  <span class="badge ${m.category === 'llm' ? 'badge-llm' : 'badge-non-llm'}">${m.category === 'llm' ? 'LLM' : t('非LLM')}</span>
                 </div>
                 <p style="font-size:12px; color:var(--text-secondary); margin-top:4px;">${escapeHtml((m.description || '').substring(0, 50))}</p>
-                <p style="font-size:10px; color:var(--text-secondary); margin-top:2px;">需要: ${(m.requires || []).join(', ') || '无'}</p>
+                <p style="font-size:10px; color:var(--text-secondary); margin-top:2px;">${t('需要:')} ${(m.requires || []).join(', ') || t('无')}</p>
               </div>
             `).join('')}
         </div>
@@ -537,16 +777,16 @@ function renderCanvas() {
         <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; padding-bottom:8px; border-bottom:2px solid var(--border);">
           ${canvasFields.map((field, fi) => `
             <div onclick="switchField(${fi})" style="cursor:pointer; padding:6px 14px; border-radius:20px; font-size:13px; font-weight:${fi===canvasActiveField?'600':'400'}; background:${fi===canvasActiveField?'var(--primary)':'var(--bg)'}; color:${fi===canvasActiveField?'#fff':'var(--text)'}; border:1px solid ${fi===canvasActiveField?'var(--primary)':'var(--border)'}; display:flex; align-items:center; gap:6px;">
-              ${field.name || '(全量)'}
-              <span onclick="event.stopPropagation(); deleteField(${fi})" style="font-size:10px; opacity:0.6; cursor:pointer;" title="删除字段">✕</span>
+              ${field.name || t('(全量)')}
+              <span onclick="event.stopPropagation(); deleteField(${fi})" style="font-size:10px; opacity:0.6; cursor:pointer;" title="${t('删除字段')}">✕</span>
             </div>
           `).join('')}
-          <button class="btn btn-ghost" onclick="addField()" style="padding:6px 12px; font-size:12px; border-radius:20px;">+ 新建</button>
+          <button class="btn btn-ghost" onclick="addField()" style="padding:6px 12px; font-size:12px; border-radius:20px;">${t('+ 新建')}</button>
         </div>
 
         <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding-bottom:8px;">
-          <button class="btn btn-ghost" style="font-size:12px;" onclick="loadCanvasFromFile()">📂 从文件加载</button>
-          <button class="btn btn-ghost" style="font-size:12px;" onclick="saveCanvasToFile()">💾 保存到文件</button>
+          <button class="btn btn-ghost" style="font-size:12px;" onclick="loadCanvasFromFile()">${t('📂 从文件加载')}</button>
+          <button class="btn btn-ghost" style="font-size:12px;" onclick="saveCanvasToFile()">${t('💾 保存到文件')}</button>
         </div>
 
         <!-- 当前字段的内容 -->
@@ -554,24 +794,24 @@ function renderCanvas() {
 
         <!-- 全局配置（精简版，无评委模式） -->
         <div class="card">
-          <h4>全局配置</h4>
+          <h4>${t('全局配置')}</h4>
           <div style="display:flex; gap:12px; align-items:end; flex-wrap:wrap;">
             <div>
-              <label style="font-size:12px;">模型 API 地址</label>
+              <label style="font-size:12px;">${t('模型 API 地址')}</label>
               <input id="cfg-base-url" value="${escapeHtml(canvasGlobal.modelBaseUrl)}" onchange="saveCanvasConfig()"
                 style="width:230px; padding:6px; border:1px solid var(--border); border-radius:4px;">
             </div>
             <div>
-              <label style="font-size:12px;">模型 ID</label>
-              <input id="cfg-model-id" value="${escapeHtml(canvasGlobal.modelId)}" onchange="saveCanvasConfig()" placeholder="如: your-model-id"
+              <label style="font-size:12px;">${t('模型 ID')}</label>
+              <input id="cfg-model-id" value="${escapeHtml(canvasGlobal.modelId)}" onchange="saveCanvasConfig()" placeholder="${t('如: your-model-id')}"
                 style="width:170px; padding:6px; border:1px solid var(--border); border-radius:4px;">
             </div>
             <div>
-              <label style="font-size:12px;">Skill 名称</label>
+              <label style="font-size:12px;">${t('Skill 名称')}</label>
               <input id="cfg-skill-name" value="${escapeHtml(canvasGlobal.skillName)}" onchange="saveCanvasConfig()"
                 style="width:150px; padding:6px; border:1px solid var(--border); border-radius:4px;">
             </div>
-            <button class="btn btn-primary" onclick="saveCanvasConfig()">💾 保存</button>
+            <button class="btn btn-primary" onclick="saveCanvasConfig()">${t('💾 保存')}</button>
           </div>
         </div>
       </div>
@@ -597,20 +837,20 @@ function renderFieldSection(field, fi) {
     <div class="card" style="border-left:3px solid var(--primary);">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
         <div style="display:flex; align-items:center; gap:8px;">
-          <strong style="font-size:15px;">📌 字段</strong>
+          <strong style="font-size:15px;">${t('📌 字段')}</strong>
           <input value="${escapeHtml(field.name || '')}"
-            onchange="renameField(${fi}, this.value)" placeholder="字段名（如: diagnosis）"
+            onchange="renameField(${fi}, this.value)" placeholder="${t('字段名（如: diagnosis）')}"
             style="padding:4px 8px; border:1px solid var(--border); border-radius:4px; font-size:13px; width:200px;">
         </div>
         <div style="display:flex; gap:4px;">
-          <button class="btn btn-ghost" style="padding:2px 8px; font-size:11px;" onclick="copyField(${fi})" title="复制此字段的指标配置">📋 复制</button>
+          <button class="btn btn-ghost" style="padding:2px 8px; font-size:11px;" onclick="copyField(${fi})" title="${t('复制此字段的指标配置')}">${t('📋 复制')}</button>
           <button class="btn btn-danger" style="padding:2px 8px; font-size:11px;" onclick="deleteField(${fi})">🗑️</button>
         </div>
       </div>
 
       <!-- 门禁子区 -->
       <div style="margin-bottom:8px;">
-        <div style="font-size:12px; color:var(--danger); margin-bottom:4px;">🚪 门禁（不通过则停止）</div>
+        <div style="font-size:12px; color:var(--danger); margin-bottom:4px;">${t('🚪 门禁（不通过则停止）')}</div>
         <div class="field-gate-zone" data-field-index="${fi}"
              ondragover="onFieldZoneDragOver(event)"
              ondragleave="onFieldZoneDragLeave(event)"
@@ -619,7 +859,7 @@ function renderFieldSection(field, fi) {
                     padding:16px; min-height:100px; background:#fef2f2;
                     display:flex; flex-direction:column; gap:4px;">
           ${gateItems.length === 0
-            ? '<div style="text-align:center; color:#f87171; font-size:12px; padding:8px 0;">拖入门禁 Metric</div>'
+            ? `<div style="text-align:center; color:#f87171; font-size:12px; padding:8px 0;">${t('拖入门禁 Metric')}</div>`
             : gateItems.map((item, i) => renderPipelineCard(item, i, fi, 'gate')).join('')
           }
         </div>
@@ -627,7 +867,7 @@ function renderFieldSection(field, fi) {
 
       <!-- 打分子区 -->
       <div>
-        <div style="font-size:12px; color:var(--success); margin-bottom:4px;">📊 打分（加权平均）</div>
+        <div style="font-size:12px; color:var(--success); margin-bottom:4px;">${t('📊 打分（加权平均）')}</div>
         <div class="field-score-zone" data-field-index="${fi}"
              ondragover="onFieldZoneDragOver(event)"
              ondragleave="onFieldZoneDragLeave(event)"
@@ -636,17 +876,17 @@ function renderFieldSection(field, fi) {
                     padding:16px; min-height:100px; background:#f0fdf4;
                     display:flex; flex-direction:column; gap:4px;">
           ${scoreItems.length === 0
-            ? '<div style="text-align:center; color:#4ade80; font-size:12px; padding:8px 0;">拖入打分 Metric</div>'
+            ? `<div style="text-align:center; color:#4ade80; font-size:12px; padding:8px 0;">${t('拖入打分 Metric')}</div>`
             : scoreItems.map((item, i) => renderPipelineCard(item, i, fi, 'score')).join('')
           }
         </div>
         ${scoreItems.length > 0 ? `
           <div style="margin-top:4px; padding:4px 8px; background:var(--primary-light); border-radius:4px; font-size:11px; color:var(--primary); display:flex; justify-content:space-between; align-items:center;">
-            <span>加权 = ${scoreItems.map((it) => {
+            <span>${t('加权 =')} ${scoreItems.map((it) => {
               const m = MetricStore.getById(it.metricId);
               return `<strong>${(it.weight||0.3).toFixed(2)}×${m?m.name:'?'}</strong>`;
             }).join(' + ')}</span>
-            <button class="btn btn-ghost" style="padding:1px 6px; font-size:10px;" onclick="event.stopPropagation(); equalizeWeights(${fi})">均分</button>
+            <button class="btn btn-ghost" style="padding:1px 6px; font-size:10px;" onclick="event.stopPropagation(); equalizeWeights(${fi})">${t('均分')}</button>
           </div>` : ''}
       </div>
     </div>`;
@@ -667,7 +907,7 @@ function renderPipelineCard(item, idx, fieldIdx, zone) {
         <span style="color:${zone==='gate'?'var(--danger)':'var(--success)'}; font-size:11px;">${idx+1}.</span>
         <strong>${escapeHtml(metric.name)}</strong>
         ${zone === 'gate'
-          ? `<span style="font-size:11px; color:var(--text-secondary);">阈值:${item.params?.threshold||0.7}</span>`
+          ? `<span style="font-size:11px; color:var(--text-secondary);">${t('阈值:')}${item.params?.threshold||0.7}</span>`
           : `<span style="font-size:11px; color:var(--text-secondary);">w:${(item.weight||0.3).toFixed(2)} s:${(item.strictness||1.0).toFixed(1)}</span>`
         }
       </div>
@@ -688,7 +928,7 @@ function addField() {
 }
 function renameField(fi, name) { canvasFields[fi].name = name; saveCanvasConfig(); }
 function deleteField(fi) {
-  if (canvasFields.length <= 1) { alert('至少保留一个字段'); return; }
+  if (canvasFields.length <= 1) { alert(t('至少保留一个字段')); return; }
   canvasFields.splice(fi, 1);
   if (canvasActiveField >= canvasFields.length) canvasActiveField = canvasFields.length - 1;
   saveCanvasConfig(); renderCanvas();
@@ -802,18 +1042,18 @@ function editFieldItemParams(fi, zone, idx) {
     return `<div><label style="font-size:12px;">${escapeHtml(p.label)}${p.required?' <span style="color:var(--danger);">*</span>':''}</label>${renderParamInput(p, val, fid)}</div>`;
   }).join('');
   const extraFields = zone === 'score' ? `
-    <div><label style="font-size:12px;">权重</label><input id="item-weight" type="number" value="${item.weight||0.3}" min="0.01" max="1" step="0.01" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;"></div>
-    <div><label style="font-size:12px;">严格度 (0.2=宽松, 5=严格)</label><input id="item-strictness" type="range" value="${item.strictness||1.0}" min="0.2" max="5" step="0.1" style="width:100%;" oninput="document.getElementById('sv').textContent=this.value"><span id="sv" style="font-size:12px;color:var(--text-secondary);">${item.strictness||1.0}</span></div>` : '';
+    <div><label style="font-size:12px;">${t('权重')}</label><input id="item-weight" type="number" value="${item.weight||0.3}" min="0.01" max="1" step="0.01" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;"></div>
+    <div><label style="font-size:12px;">${t('严格度 (0.2=宽松, 5=严格)')}</label><input id="item-strictness" type="range" value="${item.strictness||1.0}" min="0.2" max="5" step="0.1" style="width:100%;" oninput="document.getElementById('sv').textContent=this.value"><span id="sv" style="font-size:12px;color:var(--text-secondary);">${item.strictness||1.0}</span></div>` : '';
 
   panel.innerHTML = `<div class="card" style="position:sticky;top:20px;">
     <div style="display:flex;justify-content:space-between;align-items:center;">
-      <h4>${escapeHtml(metric.name)} — ${zone==='gate'?'门禁':'打分'}参数</h4>
+      <h4>${escapeHtml(metric.name)} — ${zone==='gate' ? t('门禁参数') : t('打分参数')}</h4>
       <button class="btn btn-ghost" style="padding:2px 8px;" onclick="document.getElementById('param-panel').style.display='none'">✕</button>
     </div>
     <form id="pipeline-param-form" style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">
-      ${paramFields||'<p style="color:var(--text-secondary);">此 metric 无参数</p>'}
+      ${paramFields||`<p style="color:var(--text-secondary);">${t('此 metric 无参数')}</p>`}
       ${extraFields}
-      <button type="submit" class="btn btn-primary">应用</button>
+      <button type="submit" class="btn btn-primary">${t('应用')}</button>
     </form>
   </div>`;
 
@@ -851,7 +1091,7 @@ function renderParamInput(param, value, fid) {
   const val = value !== undefined ? value : param.default;
   switch (param.type) {
     case 'number': return `<input id="${id}" type="number" value="${val}" min="${param.min||''}" max="${param.max||''}" step="${param.step||0.1}" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;">`;
-    case 'boolean': return `<label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input id="${id}" type="checkbox" ${val?'checked':''}> 启用</label>`;
+    case 'boolean': return `<label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input id="${id}" type="checkbox" ${val?'checked':''}> ${t('启用')}</label>`;
     case 'json': return `<textarea id="${id}" rows="4" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;font-family:monospace;font-size:12px;">${typeof val==='object'?JSON.stringify(val,null,2):val}</textarea>`;
     case 'select': return `<select id="${id}" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;">${(param.options||[]).map(o=>`<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join('')}</select>`;
     default: return `<input id="${id}" type="text" value="${escapeHtml(String(val??''))}" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;">`;
@@ -868,7 +1108,7 @@ function renderParamInput(param, value, zone, pipelineIndex) {
         style="width:100%; padding:6px; border:1px solid var(--border); border-radius:4px;">`;
     case 'boolean':
       return `<label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-        <input id="${id}" type="checkbox" ${val ? 'checked' : ''}> 启用
+        <input id="${id}" type="checkbox" ${val ? 'checked' : ''}> ${t('启用')}
       </label>`;
     case 'json':
       return `<textarea id="${id}" rows="4" style="width:100%; padding:6px; border:1px solid var(--border); border-radius:4px; font-family:monospace; font-size:12px;">${typeof val === 'object' ? JSON.stringify(val, null, 2) : val}</textarea>`;
@@ -905,11 +1145,11 @@ async function refreshMetrics() {
   loaded.forEach(m => MetricStore.save(m));
   renderMetricLibrary();
   renderCanvas();
-  alert(`已刷新，加载 ${loaded.length} 个 metric`);
+  alert(t('已刷新，加载 N 个 metric').replace('N', loaded.length));
 }
 
 function resetMetrics() {
-  if (!confirm('确定重置？这将清除当前项目的所有自定义 metric。')) return;
+  if (!confirm(t('确定重置？这将清除当前项目的所有自定义 metric。'))) return;
   localStorage.removeItem(_pk('metrics'));
   MetricStore.reload();
   initPresetMetrics();
@@ -988,7 +1228,7 @@ function generateSkillCode() {
     });
 
     fieldCodes.push({
-      fieldName: field.name || '(全量)',
+      fieldName: field.name || t('(全量)'),
       gateCode: gateParts.join(',\n            '),
       scoreCode: scoreParts.join(',\n            '),
       weights: weights,
@@ -1000,10 +1240,10 @@ function generateSkillCode() {
     customMetricsCode: [...customMetrics].join('\n\n'),
     fieldCodes: fieldCodes,
     metricList: canvasFields.map(f => {
-      const n = f.name || '(全量)';
+      const n = f.name || t('(全量)');
       const g = (f.gatePipeline||[]).map(it => MetricStore.getById(it.metricId)?.name).filter(Boolean).join(', ');
       const s = (f.scorePipeline||[]).map(it => MetricStore.getById(it.metricId)?.name).filter(Boolean).join(', ');
-      return `📌 ${n}\n  门禁: ${g||'无'}\n  打分: ${s||'无'}`;
+      return `📌 ${n}\n  ${t('门禁:')} ${g||t('无')}\n  ${t('打分:')} ${s||t('无')}`;
     }).join('\n\n'),
   };
 }
@@ -1046,11 +1286,11 @@ async function renderExportTab() {
   container.innerHTML = `
     <div style="display:flex; flex-direction:column; gap:20px; width:100%;">
       <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h2>导出 Skill</h2>
-        <button class="btn btn-primary" onclick="downloadSkillZip()" ${canvasFields.every(f=>(f.gatePipeline||[]).length+(f.scorePipeline||[]).length===0)?'disabled':''}>📥 下载 Skill Zip</button>
+        <h2>${t('导出 Skill')}</h2>
+        <button class="btn btn-primary" onclick="downloadSkillZip()" ${canvasFields.every(f=>(f.gatePipeline||[]).length+(f.scorePipeline||[]).length===0)?'disabled':''}>${t('📥 下载 Skill Zip')}</button>
       </div>
-      <div class="card"><h3>评测管线预览</h3><pre style="background:#1e293b;color:#e2e8f0;padding:16px;border-radius:8px;overflow:auto;font-size:13px;">${escapeHtml(code.metricList)}</pre></div>
-      <div class="card"><h3>eval_script.py 预览</h3><pre style="background:#1e293b;color:#e2e8f0;padding:16px;border-radius:8px;overflow:auto;max-height:300px;font-size:13px;">${escapeHtml(script)}</pre></div>
+      <div class="card"><h3>${t('评测管线预览')}</h3><pre style="background:#1e293b;color:#e2e8f0;padding:16px;border-radius:8px;overflow:auto;font-size:13px;">${escapeHtml(code.metricList)}</pre></div>
+      <div class="card"><h3>${t('eval_script.py 预览')}</h3><pre style="background:#1e293b;color:#e2e8f0;padding:16px;border-radius:8px;overflow:auto;max-height:300px;font-size:13px;">${escapeHtml(script)}</pre></div>
     </div>`;
 }
 
@@ -1084,7 +1324,7 @@ function generateFieldEvalCode(fieldCodes) {
 async function downloadSkillZip() {
   const code = generateSkillCode();
   if (canvasFields.every(f => (f.gatePipeline||[]).length + (f.scorePipeline||[]).length === 0)) {
-    alert('请先在 Canvas 中添加 Metric');
+    alert(t('请先在 Canvas 中添加 Metric'));
     return;
   }
 
@@ -1134,11 +1374,11 @@ function renderProjectSidebar() {
   list.innerHTML = projectList.map(p => `
     <div class="project-item ${p===currentProject?'active':''}" onclick="switchProject('${p}')">
       <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${p}</span>
-      <span class="proj-delete" onclick="event.stopPropagation(); deleteProject('${p}')" title="删除">✕</span>
+      <span class="proj-delete" onclick="event.stopPropagation(); deleteProject('${p}')" title="${t('删除')}">✕</span>
     </div>
   `).join('');
   const cnt = document.getElementById('project-count');
-  if (cnt) cnt.textContent = `${projectList.length} 个项目`;
+  if (cnt) cnt.textContent = t('N 个项目').replace('N', projectList.length);
 }
 function switchProject(proj) {
   currentProject = proj;
@@ -1151,10 +1391,10 @@ function switchProject(proj) {
   renderExportTab();
 }
 function newProject() {
-  const name = prompt('项目名称：');
+  const name = prompt(t('项目名称：'));
   if (!name || !name.trim()) return;
   const id = name.trim().replace(/\s+/g, '_').toLowerCase();
-  if (projectList.includes(id)) { alert('项目已存在'); return; }
+  if (projectList.includes(id)) { alert(t('项目已存在')); return; }
   projectList.push(id); _saveProjects(projectList);
   currentProject = id; localStorage.setItem('deepeval_current_project', id);
   MetricStore.reload();
@@ -1166,8 +1406,8 @@ function newProject() {
   renderExportTab();
 }
 function deleteProject(proj) {
-  if (projectList.length <= 1) { alert('至少保留一个项目'); return; }
-  if (!confirm(`确定删除项目 "${proj}"？\n其所有指标和管线配置将被清除。`)) return;
+  if (projectList.length <= 1) { alert(t('至少保留一个项目')); return; }
+  if (!confirm(`${t('确定删除项目')} "${proj}"？\n${t('其所有指标和管线配置将被清除。')}`)) return;
   ['metrics', 'canvas_fields', 'canvas_active', 'canvas_global'].forEach(k => {
     const old = currentProject;
     currentProject = proj;
@@ -1205,7 +1445,7 @@ async function renderOverview() {
   const container = document.getElementById('tab-overview');
   container.style.flexDirection = 'column';
   container.style.gap = '20px';
-  container.innerHTML = `<div style="color:var(--text-secondary); padding:20px;">⏳ 加载中...</div>`;
+  container.innerHTML = `<div style="color:var(--text-secondary); padding:20px;">${t('⏳ 加载中...')}</div>`;
 
   // 读取最近 Run
   const runs = await _fetchBridge(`/api/runs?project=${encodeURIComponent(currentProject)}`);
@@ -1222,35 +1462,35 @@ async function renderOverview() {
 
   container.innerHTML = `
     <div style="display:flex; flex-direction:column; gap:20px; width:100%;">
-      <h2>🏠 概览 — ${currentProject}</h2>
+      <h2>${t('🏠 概览')} — ${currentProject}</h2>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
 
         <!-- 当前 Canvas 摘要 -->
         <div class="card">
-          <h3 style="margin-bottom:12px;">当前编排配置</h3>
-          ${fields.length === 0 ? '<p style="color:var(--text-secondary)">尚未配置字段，去 Canvas 编排开始吧。</p>' : `
+          <h3 style="margin-bottom:12px;">${t('当前编排配置')}</h3>
+          ${fields.length === 0 ? `<p style="color:var(--text-secondary)">${t('尚未配置字段，去 Canvas 编排开始吧。')}</p>` : `
             <p style="font-size:13px; color:var(--text-secondary); margin-bottom:8px;">
-              ${fields.length} 个字段 · ${totalMetrics} 个 Metric
+              ${t('N 个字段 · M 个 Metric').replace('N', fields.length).replace('M', totalMetrics)}
             </p>
             ${fields.map(f => `
               <div style="padding:8px; background:var(--bg); border-radius:6px; margin-bottom:6px;">
-                <strong>${f.name || '(未命名)'}</strong>
+                <strong>${f.name || t('(未命名)')}</strong>
                 <span style="font-size:11px; color:var(--text-secondary); margin-left:8px;">
-                  门禁 ${(f.gatePipeline||[]).length} · 打分 ${(f.scorePipeline||[]).length}
+                  ${t('门禁')} ${(f.gatePipeline||[]).length} · ${t('打分')} ${(f.scorePipeline||[]).length}
                 </span>
               </div>
             `).join('')}
           `}
           <button class="btn btn-ghost" style="margin-top:12px; font-size:13px;"
             onclick="document.querySelector('[data-tab=canvas]').click()">
-            去 Canvas 编排 →
+            ${t('去 Canvas 编排 →')}
           </button>
         </div>
 
         <!-- 最近 Run + 快捷操作 -->
         <div style="display:flex; flex-direction:column; gap:16px;">
           <div class="card">
-            <h3 style="margin-bottom:12px;">最近一次 Run</h3>
+            <h3 style="margin-bottom:12px;">${t('最近一次 Run')}</h3>
             ${latestRun ? `
               <div style="display:flex; flex-direction:column; gap:6px;">
                 <div style="font-size:13px;">
@@ -1258,40 +1498,40 @@ async function renderOverview() {
                   <code>${latestRun.run_id}</code>
                 </div>
                 <div style="font-size:13px;">
-                  <span style="color:var(--text-secondary);">时间:</span>
+                  <span style="color:var(--text-secondary);">${t('时间:')}</span>
                   ${latestRun.timestamp ? latestRun.timestamp.slice(0,19).replace('T',' ') : 'N/A'}
                 </div>
                 <div style="font-size:13px;">
-                  <span style="color:var(--text-secondary);">总分:</span>
+                  <span style="color:var(--text-secondary);">${t('总分:')}</span>
                   <strong>${latestRun.overall_score != null ? latestRun.overall_score.toFixed(4) : 'N/A'}</strong>
                 </div>
                 <div style="font-size:13px;">
-                  <span style="color:var(--text-secondary);">状态:</span>
+                  <span style="color:var(--text-secondary);">${t('状态:')}</span>
                   <span style="color:${statusColors[latestRun.status] || 'inherit'}">
                     ${statusIcons[latestRun.status] || '?'} ${latestRun.status}
                   </span>
                 </div>
                 <div style="font-size:13px;">
-                  <span style="color:var(--text-secondary);">触发:</span>
+                  <span style="color:var(--text-secondary);">${t('触发:')}</span>
                   ${latestRun.triggered_by === 'agent' ? '🤖 Agent' : '🖱️ UI'}
                 </div>
               </div>
-            ` : `<p style="color:var(--text-secondary); font-size:13px;">暂无 Run 历史</p>`}
+            ` : `<p style="color:var(--text-secondary); font-size:13px;">${t('暂无 Run 历史')}</p>`}
           </div>
           <div class="card">
-            <h3 style="margin-bottom:12px;">快捷操作</h3>
+            <h3 style="margin-bottom:12px;">${t('快捷操作')}</h3>
             <div style="display:flex; flex-direction:column; gap:8px;">
               <button class="btn btn-ghost" style="text-align:left;"
                 onclick="document.querySelector('[data-tab=history]').click()">
-                🕐 查看完整 Run 历史
+                ${t('🕐 查看完整 Run 历史')}
               </button>
               <button class="btn btn-ghost" style="text-align:left;"
                 onclick="document.querySelector('[data-tab=compare]').click()">
-                🔀 对比视图
+                ${t('🔀 对比视图')}
               </button>
               <button class="btn btn-ghost" style="text-align:left;"
                 onclick="document.querySelector('[data-tab=export]').click()">
-                📥 导出 Skill
+                ${t('📥 导出 Skill')}
               </button>
             </div>
           </div>
@@ -1311,7 +1551,7 @@ async function renderHistory() {
   const container = document.getElementById('tab-history');
   container.style.flexDirection = 'column';
   container.style.gap = '20px';
-  container.innerHTML = `<div style="color:var(--text-secondary); padding:20px;">⏳ 加载中...</div>`;
+  container.innerHTML = `<div style="color:var(--text-secondary); padding:20px;">${t('⏳ 加载中...')}</div>`;
 
   const runs = await _fetchBridge(`/api/runs?project=${encodeURIComponent(currentProject)}`);
   _historyRuns = runs || [];
@@ -1320,9 +1560,9 @@ async function renderHistory() {
   if (_historyRuns.length === 0) {
     container.innerHTML = `
       <div style="display:flex; flex-direction:column; gap:20px; width:100%;">
-        <h2>🕐 Run 历史</h2>
+        <h2>${t('🕐 Run 历史')}</h2>
         <div class="card" style="color:var(--text-secondary); text-align:center; padding:40px;">
-          暂无 Run 历史。<br>先导出 Skill 让 Agent 跑一次评测吧。
+          ${t('暂无 Run 历史。<br>先导出 Skill 让 Agent 跑一次评测吧。')}
         </div>
       </div>`;
     return;
@@ -1338,16 +1578,16 @@ function _renderHistoryTable(container) {
   container.innerHTML = `
     <div style="display:flex; flex-direction:column; gap:16px; width:100%;">
       <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h2>🕐 Run 历史 <span style="font-size:14px; color:var(--text-secondary); font-weight:normal;">
-          (${_historyRuns.length} 条)
+        <h2>${t('🕐 Run 历史')} <span style="font-size:14px; color:var(--text-secondary); font-weight:normal;">
+          (${t('N 条').replace('N', _historyRuns.length)})
         </span></h2>
         <div style="display:flex; gap:8px; align-items:center;">
           <span id="history-selected-count" style="font-size:13px; color:var(--text-secondary);"></span>
           <button id="btn-create-group" class="btn btn-primary" style="display:none;"
             onclick="_createGroupFromSelected()">
-            🗂️ 创建对比组
+            ${t('🗂️ 创建对比组')}
           </button>
-          <button class="btn btn-ghost" onclick="renderHistory()">🔄 刷新</button>
+          <button class="btn btn-ghost" onclick="renderHistory()">${t('🔄 刷新')}</button>
         </div>
       </div>
 
@@ -1360,11 +1600,11 @@ function _renderHistoryTable(container) {
                   onchange="_historyToggleAll(this.checked)">
               </th>
               <th style="padding:10px 12px; text-align:left;">Run ID</th>
-              <th style="padding:10px 12px; text-align:left;">时间</th>
-              <th style="padding:10px 12px; text-align:left;">总分</th>
-              <th style="padding:10px 12px; text-align:left;">状态</th>
-              <th style="padding:10px 12px; text-align:left;">触发</th>
-              <th style="padding:10px 12px; text-align:left;">操作</th>
+              <th style="padding:10px 12px; text-align:left;">${t('时间')}</th>
+              <th style="padding:10px 12px; text-align:left;">${t('总分')}</th>
+              <th style="padding:10px 12px; text-align:left;">${t('状态')}</th>
+              <th style="padding:10px 12px; text-align:left;">${t('触发')}</th>
+              <th style="padding:10px 12px; text-align:left;">${t('操作')}</th>
             </tr>
           </thead>
           <tbody id="history-tbody">
@@ -1393,14 +1633,14 @@ function _renderHistoryTable(container) {
                 </td>
                 <td style="padding:10px 12px;">
                   <button class="btn btn-ghost" style="font-size:11px; padding:4px 8px;"
-                    onclick="_toggleRunDetail(${i}, '${r.run_id}')">详情</button>
+                    onclick="_toggleRunDetail(${i}, '${r.run_id}')">${t('详情')}</button>
                   <button class="btn" style="font-size:11px; padding:4px 8px; background:#fee2e2; color:#b91c1c; border:none;"
-                    onclick="_softDeleteRun('${r.run_id}')">删除</button>
+                    onclick="_softDeleteRun('${r.run_id}')">${t('删除')}</button>
                 </td>
               </tr>
               <tr id="history-detail-${i}" style="display:none; background:var(--bg);">
                 <td colspan="7" style="padding:12px 16px;">
-                  <div id="history-detail-content-${i}" style="color:var(--text-secondary);">加载中...</div>
+                  <div id="history-detail-content-${i}" style="color:var(--text-secondary);">${t('加载中...')}</div>
                 </td>
               </tr>
             `).join('')}
@@ -1430,7 +1670,7 @@ function _updateHistorySelectionUI() {
   const count = _historySelected.size;
   const countEl = document.getElementById('history-selected-count');
   const btnEl = document.getElementById('btn-create-group');
-  if (countEl) countEl.textContent = count > 0 ? `已选 ${count} 条` : '';
+  if (countEl) countEl.textContent = count > 0 ? t('已选 N 条').replace('N', count) : '';
   if (btnEl) btnEl.style.display = count >= 2 ? 'inline-block' : 'none';
 }
 
@@ -1441,7 +1681,7 @@ async function _toggleRunDetail(idx, runId) {
     detailRow.style.display = 'table-row';
     const data = await _fetchBridge(`/api/runs/${runId}`);
     if (!data) {
-      contentEl.textContent = '加载失败';
+      contentEl.textContent = t('加载失败');
       return;
     }
     const config = data.config || {};
@@ -1449,13 +1689,13 @@ async function _toggleRunDetail(idx, runId) {
     contentEl.innerHTML = `
       <div style="display:flex; gap:16px; font-size:12px;">
         <div>
-          <strong>模型:</strong> ${config.global?.modelId || 'N/A'}<br>
-          <strong>字段数:</strong> ${fields.length}
+          <strong>${t('模型:')}</strong> ${config.global?.modelId || 'N/A'}<br>
+          <strong>${t('字段数:')}</strong> ${fields.length}
         </div>
         <div>
-          <strong>总 Metric:</strong>
+          <strong>${t('总 Metric:')}</strong>
           ${fields.reduce((a,f)=>a+(f.gatePipeline||[]).length+(f.scorePipeline||[]).length,0)}<br>
-          <strong>数据集 SHA256前8位:</strong> ${(data.dataset_ref?.sha256||'N/A').slice(0,8)}
+          <strong>${t('数据集 SHA256前8位:')}</strong> ${(data.dataset_ref?.sha256||'N/A').slice(0,8)}
         </div>
       </div>
       <pre style="margin-top:8px; font-size:11px; background:white; padding:8px; border-radius:4px; overflow:auto; max-height:120px;">${JSON.stringify(config, null, 2)}</pre>
@@ -1466,20 +1706,20 @@ async function _toggleRunDetail(idx, runId) {
 }
 
 async function _softDeleteRun(runId) {
-  if (!confirm(`确定删除 Run "${runId}"？\n（软删除，git 历史仍然保留）`)) return;
+  if (!confirm(`${t('确定删除 Run')} "${runId}"?\n${t('（软删除，git 历史仍然保留）')}`)) return;
   const res = await _fetchBridge(`/api/runs/${runId}`); // 先确认存在
   const delRes = await fetch(`${GIT_BRIDGE}/api/runs/${runId}`, { method: 'DELETE' });
   if (delRes.ok) {
-    alert(`✅ Run ${runId} 已软删除`);
+    alert(`✅ Run ${runId} ${t('已软删除')}`);
     renderHistory();
   } else {
-    alert(`❌ 删除失败`);
+    alert(t('❌ 删除失败'));
   }
 }
 
 async function _createGroupFromSelected() {
-  if (_historySelected.size < 2) { alert('至少选2个 Run'); return; }
-  const name = prompt('对比组名称（如：换模型对比）：');
+  if (_historySelected.size < 2) { alert(t('至少选2个 Run')); return; }
+  const name = prompt(t('对比组名称（如：换模型对比）：'));
   if (!name || !name.trim()) return;
   const res = await fetch(`${GIT_BRIDGE}/api/groups`, {
     method: 'POST',
@@ -1487,11 +1727,11 @@ async function _createGroupFromSelected() {
     body: JSON.stringify({ name: name.trim(), run_ids: [..._historySelected] }),
   });
   if (res.ok) {
-    alert(`✅ 对比组 "${name}" 创建成功`);
+    alert(`${t('✅ 对比组')} "${name}" ${t('创建成功')}`);
     _historySelected.clear();
     _updateHistorySelectionUI();
   } else {
-    alert('❌ 创建失败');
+    alert(t('❌ 创建失败'));
   }
 }
 
@@ -1510,41 +1750,41 @@ async function renderCompare() {
     : (await _fetchBridge(`/api/runs?project=${encodeURIComponent(currentProject)}`)) || [];
 
   const runOptions = runsForDropdown.map(r =>
-    `<option value="${r.run_id}">${r.run_id} (${r.timestamp?.slice(0,10)||'N/A'}, ${r.overall_score?.toFixed(2)||'?'}分)</option>`
+    `<option value="${r.run_id}">${r.run_id} (${r.timestamp?.slice(0,10)||'N/A'}, ${r.overall_score?.toFixed(2)||'?'}${t('分')})</option>`
   ).join('');
 
   const groupOptions = groups.map(g =>
-    `<option value="__group__${g.name}">[对比组] ${g.name} (${g.runs.length} 个Run)</option>`
+    `<option value="__group__${g.name}">[${t('对比组')}] ${g.name} (${g.runs.length} ${t('个Run')})</option>`
   ).join('');
 
   container.innerHTML = `
     <div style="display:flex; flex-direction:column; gap:20px; width:100%;">
-      <h2>🔀 对比视图</h2>
+      <h2>${t('🔀 对比视图')}</h2>
 
       <!-- 选择栏 -->
       <div class="card" style="display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap;">
         <div style="flex:1; min-width:200px;">
-          <label>基准 Run A</label>
+          <label>${t('基准 Run A')}</label>
           <select id="compare-run-a" style="width:100%; padding:6px; border:1px solid var(--border); border-radius:4px;">
-            <option value="">-- 选择 Run --</option>
+            <option value="">${t('-- 选择 Run --')}</option>
             ${runOptions}
           </select>
         </div>
         <div style="font-size:20px; padding-bottom:8px;">VS</div>
         <div style="flex:1; min-width:200px;">
-          <label>对比 Run B</label>
+          <label>${t('对比 Run B')}</label>
           <select id="compare-run-b" style="width:100%; padding:6px; border:1px solid var(--border); border-radius:4px;">
-            <option value="">-- 选择 Run --</option>
+            <option value="">${t('-- 选择 Run --')}</option>
             ${runOptions}
           </select>
         </div>
-        <button class="btn btn-primary" onclick="_runDiff()">🔍 对比</button>
+        <button class="btn btn-primary" onclick="_runDiff()">${t('🔍 对比')}</button>
         ${groups.length > 0 ? `
         <div style="width:100%; border-top:1px solid var(--border); padding-top:12px;">
-          <label>或从对比组快速加载</label>
+          <label>${t('或从对比组快速加载')}</label>
           <select id="compare-group-select" onchange="_loadGroupIntoCompare(this.value)"
             style="width:300px; padding:6px; border:1px solid var(--border); border-radius:4px;">
-            <option value="">-- 选择对比组 --</option>
+            <option value="">${t('-- 选择对比组 --')}</option>
             ${groups.map(g => `<option value="${g.name}">${g.name} (${g.runs.join(', ')})</option>`).join('')}
           </select>
         </div>` : ''}
@@ -1562,7 +1802,7 @@ function _loadGroupIntoCompare(groupName) {
   // 重新从服务拿对比组数据
   _fetchBridge('/api/groups').then(data => {
     const group = (data||[]).find(g => g.name === groupName);
-    if (!group || group.runs.length < 2) { alert('对比组至少需要2个Run'); return; }
+    if (!group || group.runs.length < 2) { alert(t('对比组至少需要2个Run')); return; }
     document.getElementById('compare-run-a').value = group.runs[0];
     document.getElementById('compare-run-b').value = group.runs[1];
   });
@@ -1573,14 +1813,14 @@ async function _runDiff() {
   const runB = document.getElementById('compare-run-b').value;
   const resultEl = document.getElementById('compare-result');
 
-  if (!runA || !runB) { alert('请选择两个 Run'); return; }
-  if (runA === runB) { alert('请选择不同的 Run'); return; }
+  if (!runA || !runB) { alert(t('请选择两个 Run')); return; }
+  if (runA === runB) { alert(t('请选择不同的 Run')); return; }
 
-  resultEl.innerHTML = `<div style="color:var(--text-secondary);">⏳ 对比中...</div>`;
+  resultEl.innerHTML = `<div style="color:var(--text-secondary);">${t('⏳ 对比中...')}</div>`;
 
   const diff = await _fetchBridge(`/api/runs/${runA}/diff/${runB}`);
   if (!diff) {
-    resultEl.innerHTML = `<div style="color:var(--danger);">❌ 对比失败，请确认 git_bridge 正在运行</div>`;
+    resultEl.innerHTML = `<div style="color:var(--danger);">${t('❌ 对比失败，请确认 git_bridge 正在运行')}</div>`;
     return;
   }
 
@@ -1619,7 +1859,7 @@ async function _runDiff() {
           <span style="width:40px; font-size:12px; text-align:right;">${(fb/100).toFixed(2)}</span>
         </div>
         <div style="font-size:11px; color:${fdColor}; margin-top:2px; padding-left:68px;">
-          变化: ${fd >= 0 ? '+' : ''}${fd.toFixed(1)}%
+          ${t('变化:')} ${fd >= 0 ? '+' : ''}${fd.toFixed(1)}%
         </div>
       </div>
     `;
@@ -1628,12 +1868,12 @@ async function _runDiff() {
   // Config diff 表格
   const configChanges = diff.config_diff || [];
   const configTable = configChanges.length === 0
-    ? `<div style="color:var(--success); font-size:13px;">✅ 配置无变化</div>`
+    ? `<div style="color:var(--success); font-size:13px;">${t('✅ 配置无变化')}</div>`
     : `<table style="width:100%; border-collapse:collapse; font-size:12px;">
         <tr style="background:var(--bg);">
-          <th style="padding:6px 10px; text-align:left; border:1px solid var(--border);">配置项</th>
-          <th style="padding:6px 10px; text-align:left; border:1px solid var(--border);">Run A (变更前)</th>
-          <th style="padding:6px 10px; text-align:left; border:1px solid var(--border);">Run B (变更后)</th>
+          <th style="padding:6px 10px; text-align:left; border:1px solid var(--border);">${t('配置项')}</th>
+          <th style="padding:6px 10px; text-align:left; border:1px solid var(--border);">${t('Run A (变更前)')}</th>
+          <th style="padding:6px 10px; text-align:left; border:1px solid var(--border);">${t('Run B (变更后)')}</th>
         </tr>
         ${configChanges.map(ch => `
           <tr>
@@ -1649,7 +1889,7 @@ async function _runDiff() {
 
       <!-- 总分对比 -->
       <div class="card">
-        <h3 style="margin-bottom:12px;">📊 总分对比</h3>
+        <h3 style="margin-bottom:12px;">${t('📊 总分对比')}</h3>
         <div style="display:flex; gap:32px; align-items:center;">
           <div style="text-align:center;">
             <div style="font-size:12px; color:var(--text-secondary);">${runA}</div>
@@ -1668,7 +1908,7 @@ async function _runDiff() {
       <!-- 字段分数柱状图 -->
       ${allFields.length > 0 ? `
       <div class="card">
-        <h3 style="margin-bottom:16px;">📈 字段分数对比</h3>
+        <h3 style="margin-bottom:16px;">${t('📈 字段分数对比')}</h3>
         <div style="display:flex; gap:16px; font-size:11px; color:var(--text-secondary); margin-bottom:12px;">
           <span>■ <span style="color:#4f46e5;">${runA}</span></span>
           <span>■ <span style="color:#22c55e;">${runB}</span></span>
@@ -1678,20 +1918,20 @@ async function _runDiff() {
 
       <!-- 数据集对比 -->
       <div class="card">
-        <h3 style="margin-bottom:12px;">🗂️ 数据集对比</h3>
+        <h3 style="margin-bottom:12px;">${t('🗂️ 数据集对比')}</h3>
         ${diff.dataset_same
-          ? `<div style="color:var(--success);">✅ 两次 Run 使用相同数据集（SHA256 一致）</div>`
-          : `<div style="color:var(--danger);">⚠️ 数据集不同</div>
+          ? `<div style="color:var(--success);">${t('✅ 两次 Run 使用相同数据集（SHA256 一致）')}</div>`
+          : `<div style="color:var(--danger);">${t('⚠️ 数据集不同')}</div>
              <div style="font-size:12px; margin-top:8px;">
-               <div>Run A: <code>${diff.dataset_a?.source || 'N/A'}</code> (sha256前8位: ${(diff.dataset_a?.sha256||'').slice(0,8)||'N/A'})</div>
-               <div>Run B: <code>${diff.dataset_b?.source || 'N/A'}</code> (sha256前8位: ${(diff.dataset_b?.sha256||'').slice(0,8)||'N/A'})</div>
+               <div>Run A: <code>${diff.dataset_a?.source || 'N/A'}</code> (${t('sha256前8位:')} ${(diff.dataset_a?.sha256||'').slice(0,8)||'N/A'})</div>
+               <div>Run B: <code>${diff.dataset_b?.source || 'N/A'}</code> (${t('sha256前8位:')} ${(diff.dataset_b?.sha256||'').slice(0,8)||'N/A'})</div>
              </div>`
         }
       </div>
 
       <!-- Config Diff -->
       <div class="card">
-        <h3 style="margin-bottom:12px;">⚙️ 配置变更</h3>
+        <h3 style="margin-bottom:12px;">${t('⚙️ 配置变更')}</h3>
         ${configTable}
       </div>
     </div>
@@ -1708,7 +1948,7 @@ function _svgChart(chart, width, height) {
   if (chart.type === 'line') return _svgLine(chart, width, height);
   if (chart.type === 'bar') return _svgBar(chart, width, height);
   if (chart.type === 'histogram') return _svgHistogram(chart, width, height);
-  return `<p style="color:var(--text-secondary);">未知图表类型: ${chart.type}</p>`;
+  return `<p style="color:var(--text-secondary);">${t('未知图表类型:')} ${chart.type}</p>`;
 }
 
 function _svgLine(chart, W, H) {
@@ -1779,7 +2019,7 @@ function _svgBar(chart, W, H) {
 
   const allPoints = chart.series.flatMap(s => s.points);
   const n = allPoints.length;
-  if (n === 0) return `<p>无数据</p>`;
+  if (n === 0) return `<p>${t('无数据')}</p>`;
 
   const barW = Math.max(8, (cW / n) * 0.7);
   const gap = cW / n;
@@ -1829,7 +2069,7 @@ function _svgHistogram(chart, W, H) {
   const cH = H - PAD.top - PAD.bottom;
 
   const bins = chart.bins || [];
-  if (bins.length === 0) return `<p>无数据</p>`;
+  if (bins.length === 0) return `<p>${t('无数据')}</p>`;
 
   const maxCount = Math.max(...bins.map(b => b.count), 1);
   const barW = (cW / bins.length) * 0.85;
@@ -1850,7 +2090,7 @@ function _svgHistogram(chart, W, H) {
     return `
       <rect x="${x.toFixed(1)}" y="${y2.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH2.toFixed(1)}"
         fill="#818cf8" rx="2">
-        <title>${b.x}: ${b.count} 条</title>
+        <title>${b.x}: ${b.count}${t('条')}</title>
       </rect>
       ${b.count > 0 ? `<text x="${(x+barW/2).toFixed(1)}" y="${(y2-3).toFixed(1)}" text-anchor="middle" font-size="10" fill="#818cf8">${b.count}</text>` : ''}
       <text x="${(i*gap+gap/2).toFixed(1)}" y="${(cH+14).toFixed(1)}" text-anchor="middle" font-size="9" fill="#64748b">${b.x}</text>
@@ -1880,16 +2120,16 @@ async function renderReport() {
   const container = document.getElementById('tab-report');
   container.style.flexDirection = 'column';
   container.style.gap = '0';
-  container.innerHTML = `<div style="color:var(--text-secondary); padding:20px;">⏳ 加载报告中...</div>`;
+  container.innerHTML = `<div style="color:var(--text-secondary); padding:20px;">${t('⏳ 加载报告中...')}</div>`;
 
   // 先尝试从 Run 历史取当前选中（如果有），否则取项目最新
   const data = await _fetchBridge(`/api/projects/${encodeURIComponent(currentProject)}/report`);
   if (!data || data.error) {
     container.innerHTML = `
       <div style="display:flex; flex-direction:column; gap:16px; width:100%; padding:20px;">
-        <h2>📊 评测报告</h2>
+        <h2>${t('📊 评测报告')}</h2>
         <div class="card" style="color:var(--text-secondary); text-align:center; padding:40px;">
-          暂无报告数据。请先用 Agent 跑一次评测并执行 record_run。<br><br>
+          ${t('暂无报告数据。请先用 Agent 跑一次评测并执行 record_run。')}<br><br>
           <code style="font-size:12px;">python3 skills/version-manager/record_run.py --run-id ... --project ${currentProject} --results ...</code>
         </div>
       </div>`;
@@ -1919,16 +2159,16 @@ async function renderReport() {
 
       <!-- 顶部摘要 -->
       <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
-        <h2>📊 评测报告 — ${currentProject}</h2>
+        <h2>${t('📊 评测报告')} — ${currentProject}</h2>
         <span style="font-size:13px; color:var(--text-secondary);">${data.created_at || ''}</span>
-        <span style="font-size:13px; color:var(--text-secondary);">${data.n_cases || 0} cases · 通过率 ${((data.pass_rate||0)*100).toFixed(1)}%</span>
-        <button class="btn btn-ghost" style="font-size:12px;" onclick="renderReport()">🔄 刷新</button>
+        <span style="font-size:13px; color:var(--text-secondary);">${data.n_cases || 0} cases · ${t('通过率')} ${((data.pass_rate||0)*100).toFixed(1)}%</span>
+        <button class="btn btn-ghost" style="font-size:12px;" onclick="renderReport()">${t('🔄 刷新')}</button>
       </div>
 
       <!-- 总分 + 指标卡 -->
       <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
         <div style="background:white; border:2px solid ${gradeColor}; border-radius:12px; padding:16px 24px; text-align:center;">
-          <div style="font-size:12px; color:var(--text-secondary);">总分</div>
+          <div style="font-size:12px; color:var(--text-secondary);">${t('总分')}</div>
           <div style="font-size:40px; font-weight:800; color:${gradeColor};">${(score*100).toFixed(1)}%</div>
           <div style="font-size:18px; font-weight:700; color:${gradeColor};">${grade}</div>
         </div>
@@ -1938,7 +2178,7 @@ async function renderReport() {
       <!-- 图表区 -->
       ${charts.length > 0 ? `
         <div>
-          <h3 style="margin-bottom:16px;">图表分析</h3>
+          <h3 style="margin-bottom:16px;">${t('图表分析')}</h3>
           <div id="report-charts-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(480px, 1fr)); gap:16px;">
             ${charts.map(c => _svgChart(c, 480, 280)).join('')}
           </div>
@@ -1947,7 +2187,7 @@ async function renderReport() {
       <!-- 表格区 -->
       ${tables.length > 0 ? `
         <div id="report-tables-section">
-          <h3 style="margin-bottom:16px;">数据明细</h3>
+          <h3 style="margin-bottom:16px;">${t('数据明细')}</h3>
           ${tables.map(t => _renderReportTable(t)).join('')}
         </div>` : ''}
     </div>
@@ -1985,10 +2225,10 @@ function _renderReportTable(table) {
 
   const pagination = paginate ? `
     <div style="display:flex; gap:8px; align-items:center; padding:10px 16px; background:var(--bg); font-size:13px;">
-      <button class="btn btn-ghost" style="padding:4px 8px;" ${page===0?'disabled':''} onclick="_reportChangePage('${table.id}', ${page-1})">← 上一页</button>
-      <span>${page+1} / ${totalPages}（共 ${rows.length} 条）</span>
-      <button class="btn btn-ghost" style="padding:4px 8px;" ${page===totalPages-1?'disabled':''} onclick="_reportChangePage('${table.id}', ${page+1})">下一页 →</button>
-    </div>` : `<div style="padding:8px 16px; font-size:12px; color:var(--text-secondary); background:var(--bg);">共 ${rows.length} 条</div>`;
+      <button class="btn btn-ghost" style="padding:4px 8px;" ${page===0?'disabled':''} onclick="_reportChangePage('${table.id}', ${page-1})">${t('← 上一页')}</button>
+      <span>${page+1} / ${totalPages}${t('（共 N 条）').replace('N', rows.length)}</span>
+      <button class="btn btn-ghost" style="padding:4px 8px;" ${page===totalPages-1?'disabled':''} onclick="_reportChangePage('${table.id}', ${page+1})">${t('下一页 →')}</button>
+    </div>` : `<div style="padding:8px 16px; font-size:12px; color:var(--text-secondary); background:var(--bg);">${t('共 N 条').replace('N', rows.length)}</div>`;
 
   return `
     <div style="margin-bottom:24px;">
@@ -2013,7 +2253,7 @@ function _reportChangePage(tableId, newPage) {
     const tables = data.summary_tables || [];
     const section = document.getElementById('report-tables-section');
     if (section) {
-      section.innerHTML = `<h3 style="margin-bottom:16px;">数据明细</h3>` +
+      section.innerHTML = `<h3 style="margin-bottom:16px;">${t('数据明细')}</h3>` +
         tables.map(t => _renderReportTable(t)).join('');
     }
   });
@@ -2021,6 +2261,7 @@ function _reportChangePage(tableId, newPage) {
 
 // 页面初始化
 document.addEventListener('DOMContentLoaded', () => {
+  _applyStaticLang();
   renderProjectSidebar();
   MetricStore.reload();
   initPresetMetrics();
