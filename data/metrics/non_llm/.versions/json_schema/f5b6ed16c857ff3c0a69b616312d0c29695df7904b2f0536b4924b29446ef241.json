@@ -1,0 +1,31 @@
+{
+  "metric_id": "json_schema",
+  "version_hash": "f5b6ed16c857ff3c0a69b616312d0c29695df7904b2f0536b4924b29446ef241",
+  "created_at": "2026-08-17T14:51:07.225921+00:00",
+  "name": "JSON Schema 校验",
+  "description": "校验模型输出是否符合指定的 JSON 字段结构（字段名 + 类型）",
+  "category": "non_llm",
+  "params": [
+    {
+      "key": "schema",
+      "label": "字段 Schema",
+      "type": "json",
+      "default": "{\"name\": \"str\", \"price\": \"int\"}",
+      "required": true
+    },
+    {
+      "key": "threshold",
+      "label": "通过阈值",
+      "type": "number",
+      "default": 1.0,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    }
+  ],
+  "criteria": null,
+  "requires": [
+    "actual_output"
+  ],
+  "code_template": "class JsonSchemaMetric(BaseMetric):\n    def __init__(self, schema: dict, threshold: float = {{threshold}}):\n        self.threshold = threshold\n        self.schema = schema\n        self.evaluation_model = \"json-schema-validator\"\n\n    def measure(self, test_case: LLMTestCase, *args, **kwargs) -> float:\n        import json as json_lib\n        actual = (test_case.actual_output or \"\").strip()\n        try:\n            data = json_lib.loads(actual)\n        except json_lib.JSONDecodeError as e:\n            self.score = 0.0\n            self.reason = f\"JSON 解析失败: {e}\"\n            self.success = False\n            return self.score\n        missing = []\n        wrong_type = []\n        for key, expected_type in self.schema.items():\n            if key not in data:\n                missing.append(key)\n            elif isinstance(expected_type, type):\n                if not isinstance(data[key], expected_type):\n                    wrong_type.append(f\"{key}(expect {expected_type.__name__}, got {type(data[key]).__name__})\")\n        if missing:\n            self.score = 0.0\n            self.reason = f\"缺少字段: {missing}\"\n        elif wrong_type:\n            self.score = 0.0\n            self.reason = f\"字段类型错误: {wrong_type}\"\n        else:\n            self.score = 1.0\n            self.reason = \"JSON 格式和字段类型完全符合预期\"\n        self.success = self.score >= self.threshold\n        return self.score\n\n    async def a_measure(self, test_case: LLMTestCase, *args, **kwargs) -> float:\n        return self.measure(test_case)\n\n    def is_successful(self) -> bool:\n        return bool(self.score and self.score >= self.threshold)\n\n    @property\n    def __name__(self):\n        return \"JsonSchema Check\""
+}

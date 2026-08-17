@@ -1,0 +1,33 @@
+{
+  "metric_id": "latency",
+  "version_hash": "77c24428c653078126d90519096d974c08019fd02c49b938100e4339df11d291",
+  "created_at": "2026-08-17T14:51:07.255483+00:00",
+  "name": "响应延迟",
+  "description": "根据 completion_time 给响应速度打分，越快分越高",
+  "category": "non_llm",
+  "params": [
+    {
+      "key": "max_ms",
+      "label": "最大响应时间 (ms)",
+      "type": "number",
+      "default": 5000,
+      "min": 100,
+      "max": 60000,
+      "step": 100
+    },
+    {
+      "key": "threshold",
+      "label": "通过阈值",
+      "type": "number",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    }
+  ],
+  "criteria": null,
+  "requires": [
+    "completion_time"
+  ],
+  "code_template": "class LatencyMetric(BaseMetric):\n    def __init__(self, max_ms: float = {{max_ms}}, threshold: float = {{threshold}}):\n        self.threshold = threshold\n        self.max_ms = max_ms\n        self.evaluation_model = \"latency-checker\"\n\n    def measure(self, test_case: LLMTestCase, *args, **kwargs) -> float:\n        latency = test_case.completion_time or 0\n        latency_ms = latency * 1000\n        if latency_ms >= self.max_ms:\n            self.score = 0.0\n            self.reason = f\"响应时间 {latency_ms:.0f}ms 超过上限 {self.max_ms:.0f}ms\"\n        else:\n            self.score = round(1.0 - (latency_ms / self.max_ms), 3)\n            self.reason = f\"响应时间 {latency_ms:.0f}ms，得分 {self.score}\"\n        self.success = self.score >= self.threshold\n        return self.score\n\n    async def a_measure(self, test_case: LLMTestCase, *args, **kwargs) -> float:\n        return self.measure(test_case)\n\n    def is_successful(self) -> bool:\n        return bool(self.score and self.score >= self.threshold)\n\n    @property\n    def __name__(self):\n        return \"Latency Check\""
+}

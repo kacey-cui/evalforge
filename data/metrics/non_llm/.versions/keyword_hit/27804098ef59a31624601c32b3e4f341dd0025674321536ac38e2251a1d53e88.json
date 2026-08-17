@@ -1,0 +1,31 @@
+{
+  "metric_id": "keyword_hit",
+  "version_hash": "27804098ef59a31624601c32b3e4f341dd0025674321536ac38e2251a1d53e88",
+  "created_at": "2026-08-17T14:51:07.225921+00:00",
+  "name": "关键词命中率",
+  "description": "检查 actual_output 是否包含所有指定关键词",
+  "category": "non_llm",
+  "params": [
+    {
+      "key": "required_keywords",
+      "label": "关键词列表 (JSON 数组)",
+      "type": "json",
+      "default": "[\"30 天\", \"全额退款\", \"无理由\"]",
+      "required": true
+    },
+    {
+      "key": "threshold",
+      "label": "通过阈值",
+      "type": "number",
+      "default": 0.8,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    }
+  ],
+  "criteria": null,
+  "requires": [
+    "actual_output"
+  ],
+  "code_template": "class KeywordHitMetric(BaseMetric):\n    def __init__(self, required_keywords: list, threshold: float = {{threshold}}):\n        self.threshold = threshold\n        self.required_keywords = required_keywords\n        self.evaluation_model = \"keyword-checker\"\n\n    def measure(self, test_case: LLMTestCase, *args, **kwargs) -> float:\n        actual = (test_case.actual_output or \"\").lower()\n        hits = []\n        misses = []\n        for kw in self.required_keywords:\n            if kw.lower() in actual:\n                hits.append(kw)\n            else:\n                misses.append(kw)\n        total = len(self.required_keywords)\n        self.score = round(len(hits) / total, 3) if total > 0 else 1.0\n        self.success = self.score >= self.threshold\n        if misses:\n            self.reason = f\"命中 {len(hits)}/{total} 个关键词，缺失: {misses}\"\n        else:\n            self.reason = f\"全部 {total} 个关键词命中\"\n        return self.score\n\n    async def a_measure(self, test_case: LLMTestCase, *args, **kwargs) -> float:\n        return self.measure(test_case)\n\n    def is_successful(self) -> bool:\n        return bool(self.score and self.score >= self.threshold)\n\n    @property\n    def __name__(self):\n        return \"Keyword Hit Rate\""
+}

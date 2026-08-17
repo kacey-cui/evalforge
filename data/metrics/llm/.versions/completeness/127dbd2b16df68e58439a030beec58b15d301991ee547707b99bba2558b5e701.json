@@ -1,0 +1,25 @@
+{
+  "metric_id": "completeness",
+  "version_hash": "127dbd2b16df68e58439a030beec58b15d301991ee547707b99bba2558b5e701",
+  "created_at": "2026-08-17T14:51:07.217554+00:00",
+  "name": "完整性 (GEval)",
+  "description": "用 LLM 评估回答是否完整，是否遗漏了 expected_output 中的关键信息。评委模型走全局配置。",
+  "category": "llm",
+  "params": [
+    {
+      "key": "threshold",
+      "label": "通过阈值",
+      "type": "number",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    }
+  ],
+  "criteria": "评估回答是否完整：检查 actual_output 是否包含了 expected_output 中所有关键信息点",
+  "requires": [
+    "actual_output",
+    "expected_output"
+  ],
+  "code_template": "GEval(\n    name=\"Completeness\",\n    criteria=\"{{criteria}}\",\n    evaluation_params=[LLMTestCaseParams.EXPECTED_OUTPUT, LLMTestCaseParams.ACTUAL_OUTPUT],\n    threshold={{threshold}},\n    model=JUDGE_MODEL,\n)"
+}
