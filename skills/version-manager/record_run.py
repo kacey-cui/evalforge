@@ -20,6 +20,7 @@ from pathlib import Path
 # 把 scripts/ 加入 sys.path，以便 import enrich_report
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts"))
 from enrich_report import enrich as _enrich_report  # noqa: E402
+from run_manifest import build_manifest, validate_manifest, compute_manifest_hash  # noqa: E402
 
 REPO_ROOT = Path(__file__).parent.parent.parent  # skills/version-manager/ 的上上上级
 
@@ -47,6 +48,13 @@ def main():
     parser.add_argument("--project", required=True, help="项目名称")
     parser.add_argument("--results", required=True, help="eval_report.json 路径")
     parser.add_argument("--triggered-by", default="agent", choices=["ui", "agent"])
+    parser.add_argument("--dataset-id", default=None)
+    parser.add_argument("--dataset-version", default=None)
+    parser.add_argument("--skill-path", default=None)
+    parser.add_argument("--model-id", default=None)
+    parser.add_argument("--model-base-url", default=None)
+    parser.add_argument("--judge-model-id", default=None)
+    parser.add_argument("--judge-model-base-url", default=None)
     args = parser.parse_args()
 
     run_dir = REPO_ROOT / "data" / "runs" / args.run_id
@@ -75,17 +83,49 @@ def main():
     else:
         (run_dir / "config.json").write_text("{}", "utf-8")
 
-    # 3. 生成 dataset_ref.json（引用 results 里的 test cases 数量）
+    # 3. 构建并落盘 manifest.json（provenance 快照）
+    manifest = build_manifest(
+        run_id=args.run_id,
+        triggered_by=args.triggered_by,
+        dataset_id=args.dataset_id,
+        dataset_version=args.dataset_version,
+        project=args.project,
+        skill_path=args.skill_path,
+        model_id=args.model_id,
+        model_base_url=args.model_base_url,
+        judge_model_id=args.judge_model_id,
+        judge_model_base_url=args.judge_model_base_url,
+        config_json_path=str(run_dir / "config.json"),
+        results=results,
+    )
+    errors = validate_manifest(manifest)
+    if errors:
+        print(f"⚠️  Manifest 校验失败（已降级继续）: {errors}", file=sys.stderr)
+    manifest["manifest_hash"] = compute_manifest_hash(manifest)
+    (run_dir / "manifest.json").write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=4), "utf-8"
+    )
+    results["manifest_hash"] = manifest["manifest_hash"]
+    (run_dir / "results.json").write_text(
+        json.dumps(results, ensure_ascii=False, indent=4), "utf-8"
+    )
+
+    # 4. 生成 dataset_ref.json（content_hash 指向 dataset，保留 sha256/source 兼容）
+    ds = manifest.get("dataset")
     dataset_ref = {
-        "n_cases": results.get("n_cases", 0),
+        "n_cases": ds["n_cases"] if ds else results.get("n_cases", 0),
         "source": args.results,
-        "sha256": _sha256_of_file(results_path),
+        "sha256": (ds["content_hash"] if ds else _sha256_of_file(results_path)),
+        "dataset_id": (ds["dataset_id"] if ds else None),
+        "version_hash": (ds["version_hash"] if ds else None),
+        "content_hash": (ds["content_hash"] if ds else None),
+        "source_path": (ds["source_path"] if ds else ""),
     }
     (run_dir / "dataset_ref.json").write_text(
         json.dumps(dataset_ref, ensure_ascii=False, indent=4), "utf-8"
     )
 
-    # 4. 生成 meta.json
+    # 5. 生成 meta.json
     overall_score = results.get("overall_score", 0.0)
     pass_rate = results.get("pass_rate", 0.0)
     status = "pass" if pass_rate >= 0.8 else ("fail" if pass_rate < 0.5 else "partial")
@@ -110,11 +150,11 @@ def main():
         json.dumps(meta, ensure_ascii=False, indent=4), "utf-8"
     )
 
-    # 5. git add
+    # 6. git add
     rel_run_dir = f"data/runs/{args.run_id}/"
     _git("add", rel_run_dir)
 
-    # 6. git commit
+    # 7. git commit
     fields_str = json.dumps(fields_scores, ensure_ascii=False)
     metrics_str = "[" + ", ".join(metrics_used) + "]"
     commit_msg = (
