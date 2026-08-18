@@ -572,7 +572,7 @@ class MiniJsonSchemaTestCase(unittest.TestCase):
 
     def test_unsupported_keyword_raises(self):
         with self.assertRaises(mjs.UnsupportedKeywordError):
-            mjs.validate("x", {"maxLength": 5})
+            mjs.validate("x", {"exclusiveMinimum": 0})
 
     def test_null_schema_passes(self):
         self.assertEqual(mjs.validate({"anything": 1}, None), [])

@@ -217,6 +217,22 @@ def diff_runs(run_id_a, run_id_b):
     )
 
 
+@app.route("/api/runs/<run_a>/eval-diff/<run_b>", methods=["GET", "OPTIONS"])
+def eval_diff_runs(run_a, run_b):
+    """GET /api/runs/<a>/eval-diff/<b> — 全面对比两个 Run，解释分数差异根因"""
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    try:
+        from eval_diff import eval_diff
+        result = eval_diff(run_a, run_b)
+        return jsonify(result), 200
+    except ImportError as e:
+        return jsonify({"ok": False, "error": {"code": "IMPORT_ERROR", "message": f"eval_diff 模块不可用: {e}"}}), 500
+    except Exception as e:
+        return jsonify({"ok": False, "error": {"code": "INTERNAL_ERROR", "message": str(e)}}), 500
+
+
 @app.route("/api/groups", methods=["GET", "OPTIONS"])
 def list_groups():
     """GET /api/groups — 列出所有对比组（git tag compare/*）"""

@@ -104,6 +104,7 @@ label { font-size: 12px; color: var(--text-secondary); display: block; margin-bo
     <button class="tab" data-tab="history"></button>
     <button class="tab" data-tab="compare"></button>
     <button class="tab" data-tab="report"></button>
+    <button class="tab" data-tab="report-compare"></button>
     <button id="lang-toggle" onclick="toggleLang()" style="margin-left:auto; padding:8px 16px; border:1px solid var(--border); background:none; cursor:pointer; border-radius:6px; font-size:13px; color:var(--text-secondary);">🌐 EN</button>
   </nav>
   <div id="tab-overview" class="tab-content"></div>
@@ -113,6 +114,7 @@ label { font-size: 12px; color: var(--text-secondary); display: block; margin-bo
   <div id="tab-history" class="tab-content"></div>
   <div id="tab-compare" class="tab-content"></div>
   <div id="tab-report" class="tab-content"></div>
+  <div id="tab-report-compare" class="tab-content"></div>
 </div>
 <div id="metric-form-overlay"></div>
 
@@ -130,6 +132,7 @@ const I18N_EN = {
   '🕐 Run 历史': '🕐 Run History',
   '🔀 对比': '🔀 Compare',
   '📊 报告': '📊 Report',
+  '📊 报告对比': '📊 Report Comparison',
   // Metric 库
   'Metric 模板库': 'Metric Template Library',
   '🔄 刷新': '🔄 Refresh',
@@ -333,6 +336,7 @@ const TAB_TEXT = {
   history: '🕐 Run 历史',
   compare: '🔀 对比',
   report: '📊 报告',
+  'report-compare': '📊 报告对比',
 };
 function toggleLang() {
   _lang = (_lang === 'zh') ? 'en' : 'zh';
@@ -442,6 +446,7 @@ document.querySelectorAll('.tab').forEach(btn => {
     if (tabName === 'history') renderHistory();
     if (tabName === 'compare') renderCompare();
     if (tabName === 'report') renderReport();
+    if (tabName === 'report-compare') renderCompare();
   });
 });
 
@@ -1936,6 +1941,171 @@ async function _runDiff() {
       </div>
     </div>
   `;
+
+  // ── 进阶：调用 eval-diff 获取更详细的对比数据 ──────────────────
+  _fetchBridge(`/api/runs/${runA}/eval-diff/${runB}`).then(ed => {
+    if (!ed || !ed.ok) {
+      // eval-diff 不可用时静默降级，保留已有对比结果
+      return;
+    }
+    const d = ed.data;
+    const sections = [];
+
+    // ── Score 摘要 ──────────────────────────────────────────
+    if (d.score_comparison) {
+      const sc = d.score_comparison;
+      const delta = (sc.overall?.delta ?? 0);
+      const sign = delta > 0 ? '+' : '';
+      const color = delta > 0 ? 'var(--success)' : (delta < 0 ? 'var(--danger)' : 'var(--text-secondary)');
+      sections.push(`
+        <div class="card">
+          <h3 style="margin-bottom:8px;">📊 Score Change</h3>
+          <div style="font-size:14px;">
+            <span style="color:var(--text-secondary);">Run A:</span> <strong>${(sc.overall?.a ?? '?')}</strong>
+            → <span style="color:var(--text-secondary);">Run B:</span> <strong>${(sc.overall?.b ?? '?')}</strong>
+            <span style="color:${color}; margin-left:8px; font-weight:600;">Δ ${sign}${delta.toFixed(4)}</span>
+          </div>
+        </div>`);
+    }
+
+    // ── Dataset ──────────────────────────────────────────────
+    if (d.dataset) {
+      const ds = d.dataset;
+      const badge = ds.status === 'unchanged' ? '<span style="color:var(--success);">✓ unchanged</span>' :
+                    ds.status === 'modified' ? '<span style="color:var(--warning);">⚠ modified</span>' :
+                    '<span style="color:var(--danger);">✗ ' + ds.status + '</span>';
+      let detail = '';
+      if (ds.detail && typeof ds.detail === 'object') {
+        const dd = ds.detail;
+        const added = dd.added_cases?.length || 0;
+        const removed = dd.removed_cases?.length || 0;
+        const modified = dd.modified_cases?.length || 0;
+        if (added || removed || modified) {
+          detail = `<div style="font-size:12px; margin-top:6px; color:var(--text-secondary);">
+            +${added} added, -${removed} removed, ~${modified} modified cases</div>`;
+        }
+      }
+      sections.push(`
+        <div class="card">
+          <h3 style="margin-bottom:8px;">🗂️ Dataset Version</h3>
+          ${badge}
+          <div style="font-size:12px; color:var(--text-secondary); margin-top:4px;">
+            ${ds.dataset_id || 'N/A'} &nbsp;|&nbsp;
+            <code style="font-size:10px;">${(ds.version_a||'').slice(0,8)}</code> → <code style="font-size:10px;">${(ds.version_b||'').slice(0,8)}</code>
+          </div>
+          ${detail}
+        </div>`);
+    }
+
+    // ── Metrics ──────────────────────────────────────────────
+    if (d.metrics && d.metrics.length > 0) {
+      const metricRows = d.metrics.map(m => {
+        const badge = m.status === 'unchanged' ? '<span style="color:var(--success);">✓ unchanged</span>' :
+                      m.status === 'modified' ? '<span style="color:var(--warning);">⚠ modified</span>' :
+                      m.status === 'added' ? '<span style="color:var(--success);">+ added</span>' :
+                      '<span style="color:var(--danger);">- removed</span>';
+        let fieldDiff = '';
+        if (m.detail && m.detail.changes) {
+          fieldDiff = '<div style="font-size:11px; margin-top:4px; padding-left:12px;">' +
+            m.detail.changes.map(c => {
+              if (c.type === 'modified') {
+                return `<div>• <code>${c.field}</code>: <span style="background:#fee2e2;padding:1px 4px;border-radius:2px;">${JSON.stringify(c.before)}</span> → <span style="background:#dcfce7;padding:1px 4px;border-radius:2px;">${JSON.stringify(c.after)}</span></div>`;
+              }
+              return `<div>• <code>${c.field}</code>: ${c.type}</div>`;
+            }).join('') + '</div>';
+        }
+        return `<div style="margin-bottom:8px; padding:8px; background:var(--bg); border-radius:4px;">
+          <strong>${m.metric_id}</strong> ${badge}
+          <div style="font-size:11px; color:var(--text-secondary);">
+            <code>${(m.version_a||'').slice(0,8)}</code> → <code>${(m.version_b||'').slice(0,8)}</code>
+          </div>
+          ${fieldDiff}
+        </div>`;
+      }).join('');
+      sections.push(`
+        <div class="card">
+          <h3 style="margin-bottom:8px;">📐 Metric Versions</h3>
+          ${metricRows}
+        </div>`);
+    }
+
+    // ── Skill ────────────────────────────────────────────────
+    if (d.skill) {
+      const sk = d.skill;
+      const badge = sk.status === 'unchanged' ? '<span style="color:var(--success);">✓ unchanged</span>' :
+                    '<span style="color:var(--warning);">⚠ modified</span>';
+      sections.push(`
+        <div class="card">
+          <h3 style="margin-bottom:8px;">🧩 Skill</h3>
+          ${badge}
+          <div style="font-size:12px; color:var(--text-secondary);">
+            ${sk.name || 'N/A'} &nbsp;|&nbsp;
+            <code style="font-size:10px;">${(sk.hash_a||'').slice(0,8)}</code> → <code style="font-size:10px;">${(sk.hash_b||'').slice(0,8)}</code>
+          </div>
+        </div>`);
+    }
+
+    // ── Model / Judge ────────────────────────────────────────
+    if (d.model || d.judge) {
+      let rows = '';
+      if (d.model) {
+        const m = d.model;
+        const badge = m.status === 'unchanged' ? '<span style="color:var(--success);">✓ unchanged</span>' :
+                      '<span style="color:var(--warning);">⚠ modified</span>';
+        rows += `<div style="margin-bottom:4px;"><strong>Model:</strong> ${badge} ${m.model_id_a || 'N/A'} → ${m.model_id_b || 'N/A'}</div>`;
+      }
+      if (d.judge) {
+        const j = d.judge;
+        const badge = j.status === 'unchanged' ? '<span style="color:var(--success);">✓ unchanged</span>' :
+                      j.status === 'added' ? '<span style="color:var(--success);">+ added</span>' :
+                      j.status === 'removed' ? '<span style="color:var(--danger);">- removed</span>' :
+                      '<span style="color:var(--warning);">⚠ modified</span>';
+        rows += `<div style="margin-bottom:4px;"><strong>Judge:</strong> ${badge}</div>`;
+      }
+      sections.push(`
+        <div class="card">
+          <h3 style="margin-bottom:8px;">🤖 Model / Judge</h3>
+          <div style="font-size:13px;">${rows}</div>
+        </div>`);
+    }
+
+    // ── Case-Level ───────────────────────────────────────────
+    if (d.score_comparison?.cases && d.score_comparison.cases.length > 0) {
+      const caseRows = d.score_comparison.cases.slice(0, 20).map(c => {
+        const badge = c.status === 'modified' ? '~' : c.status === 'added' ? '+' : '-';
+        const color = c.status === 'modified' ? 'var(--warning)' : (c.status === 'added' ? 'var(--success)' : 'var(--danger)');
+        return `<div style="font-size:12px; padding:4px 0; border-bottom:1px solid var(--border);">
+          <span style="color:${color}; font-weight:600;">${badge}</span>
+          Case #${c.case_id}
+          ${c.score ? `<span style="color:var(--text-secondary);"> score: ${c.score.a} → ${c.score.b}</span>` : ''}
+        </div>`;
+      }).join('');
+      sections.push(`
+        <div class="card">
+          <h3 style="margin-bottom:8px;">📋 Case-Level Changes (${d.score_comparison.cases.length})</h3>
+          ${caseRows}
+        </div>`);
+    }
+
+    // ── Summary ──────────────────────────────────────────────
+    if (d.summary) {
+      sections.push(`
+        <div class="card" style="border-left:3px solid var(--primary);">
+          <h3 style="margin-bottom:8px;">💡 Summary</h3>
+          <div style="font-size:14px; line-height:1.6;">${d.summary}</div>
+        </div>`);
+    }
+
+    // Append
+    if (sections.length > 0) {
+      resultEl.innerHTML += `<div style="display:flex; flex-direction:column; gap:16px; margin-top:16px; border-top:2px solid var(--primary); padding-top:16px;">
+        <h4 style="color:var(--primary); margin:0;">📊 Detailed Root-Cause Analysis</h4>
+        ${sections.join('')}
+      </div>`;
+    }
+  }).catch(() => {
+    // eval-diff 不可用，静默降级
+  });
 }
 
 // ============================================================

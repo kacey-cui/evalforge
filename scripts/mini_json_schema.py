@@ -22,8 +22,9 @@ def validate(instance, schema):
     """校验 instance 是否满足 schema，返回错误信息列表（空列表 = 通过）。
 
     支持的关键字子集：type（含数组 union 与 "null"）、properties、required、
-    items、enum、const、pattern、minLength、minimum、minItems、
-    additionalProperties（bool）、oneOf / anyOf（递归）、null（空 schema）。
+    items、enum、const、pattern、minLength、maxLength、minimum、maximum、
+    minItems、maxItems、additionalProperties（bool）、oneOf / anyOf（递归）、
+    null（空 schema）。
     """
     errors = []
     _validate(instance, schema, "", errors)
@@ -62,10 +63,16 @@ def _validate(instance, schema, path, errors):
             _check_pattern(instance, value, path, errors)
         elif keyword == "minLength":
             _check_min_length(instance, value, path, errors)
+        elif keyword == "maxLength":
+            _check_max_length(instance, value, path, errors)
         elif keyword == "minimum":
             _check_minimum(instance, value, path, errors)
+        elif keyword == "maximum":
+            _check_maximum(instance, value, path, errors)
         elif keyword == "minItems":
             _check_min_items(instance, value, path, errors)
+        elif keyword == "maxItems":
+            _check_max_items(instance, value, path, errors)
         elif keyword == "additionalProperties":
             _check_additional_properties(instance, schema, path, errors)
         elif keyword == "oneOf":
@@ -197,6 +204,27 @@ def _check_min_items(instance, value, path, errors):
         return
     if len(instance) < value:
         errors.append(_err(path, f"数组长度 {len(instance)} 小于 minItems {value}"))
+
+
+def _check_maximum(instance, value, path, errors):
+    if not isinstance(instance, (int, float)) or isinstance(instance, bool):
+        return
+    if instance > value:
+        errors.append(_err(path, f"数值 {instance} 大于 maximum {value}"))
+
+
+def _check_max_length(instance, value, path, errors):
+    if not isinstance(instance, str):
+        return
+    if len(instance) > value:
+        errors.append(_err(path, f"字符串长度 {len(instance)} 大于 maxLength {value}"))
+
+
+def _check_max_items(instance, value, path, errors):
+    if not isinstance(instance, list):
+        return
+    if len(instance) > value:
+        errors.append(_err(path, f"数组长度 {len(instance)} 大于 maxItems {value}"))
 
 
 def _check_additional_properties(instance, schema, path, errors):
