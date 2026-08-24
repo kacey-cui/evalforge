@@ -1,0 +1,27 @@
+{
+  "dataset_id": "customer_support_v2",
+  "name": "Customer Support Q&A v2",
+  "description": "Refined v2 dataset with improved policy wording, clarified edge cases, and 5 updated cases based on v1 evaluation feedback.",
+  "n_cases": 63,
+  "version_hash": "44d499d25c4d3687",
+  "content_hash": "44d499d25c4d3687c4ac0e2bc8d6da155d7df5d6ca7430464eaea6f58e549866",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "input": {
+        "type": "string"
+      },
+      "expected_output": {
+        "type": "string"
+      }
+    }
+  },
+  "created_at": "2026-08-12T10:00:00Z",
+  "changelog": {
+    "added": 5,
+    "modified": 5,
+    "removed": 2,
+    "previous_version": "customer_support_v1",
+    "summary": "Added 5 hard edge cases, improved 5 answers, removed 2 trivial cases."
+  }
+}

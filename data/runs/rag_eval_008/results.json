@@ -1,0 +1,301 @@
+{
+  "skill": "RAG Assistant v8 - Optimal: 93.4% correctness, 91.1% grounding",
+  "created_at": "2026-08-18T10:01:52Z",
+  "n_cases": 80,
+  "n_passed": 72,
+  "pass_rate": 0.91,
+  "overall_score": 0.918,
+  "grade": "A",
+  "fields": {
+    "answer_quality": {
+      "field_score": 0.918,
+      "metrics": [
+        {
+          "name": "Answer Correctness",
+          "mean": 0.934,
+          "std": 0.12
+        },
+        {
+          "name": "Context Relevance",
+          "mean": 0.871,
+          "std": 0.12
+        },
+        {
+          "name": "Faithfulness",
+          "mean": 0.912,
+          "std": 0.12
+        },
+        {
+          "name": "Evidence Grounding",
+          "mean": 0.911,
+          "std": 0.12
+        },
+        {
+          "name": "Citation Accuracy",
+          "mean": 0.889,
+          "std": 0.12
+        },
+        {
+          "name": "Evidence Coverage",
+          "mean": 0.892,
+          "std": 0.12
+        }
+      ]
+    }
+  },
+  "cases": [],
+  "bad_cases": [
+    {
+      "case_id": 0,
+      "input": "Case 0",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 1,
+      "input": "Case 1",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 2,
+      "input": "Case 2",
+      "issue": "Score below threshold"
+    }
+  ],
+  "config": {
+    "model": {
+      "modelId": "gpt-4o",
+      "baseUrl": "https://api.openai.com/v1"
+    },
+    "metrics": [
+      {
+        "name": "accuracy",
+        "type": "score"
+      },
+      {
+        "name": "completeness",
+        "type": "score"
+      },
+      {
+        "name": "no_hallucination",
+        "type": "score"
+      },
+      {
+        "name": "json_schema",
+        "type": "gate"
+      }
+    ]
+  },
+  "summary_charts": [
+    {
+      "id": "metric_breakdown",
+      "type": "bar",
+      "title": "Metric Breakdown — 008",
+      "x_label": "Metric",
+      "y_label": "Score",
+      "y_min": 0,
+      "y_max": 1,
+      "series": [
+        {
+          "label": "Score",
+          "color": "#22c55e",
+          "points": [
+            {
+              "x": "Correctness",
+              "y": 0.934
+            },
+            {
+              "x": "Relevance",
+              "y": 0.871
+            },
+            {
+              "x": "Faithfulness",
+              "y": 0.912
+            },
+            {
+              "x": "Grounding",
+              "y": 0.911
+            },
+            {
+              "x": "Citation",
+              "y": 0.889
+            },
+            {
+              "x": "Coverage",
+              "y": 0.892
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "evidence_trend",
+      "type": "line",
+      "title": "Evidence Grounding vs Context Relevance — 8 Run Trend",
+      "x_label": "Run",
+      "y_label": "Score",
+      "y_min": 0.6,
+      "y_max": 1.0,
+      "series": [
+        {
+          "label": "Evidence Grounding",
+          "color": "#4f46e5",
+          "points": [
+            {
+              "x": "v1",
+              "y": 0.713
+            },
+            {
+              "x": "v2",
+              "y": 0.738
+            },
+            {
+              "x": "v3",
+              "y": 0.761
+            },
+            {
+              "x": "v4",
+              "y": 0.782
+            },
+            {
+              "x": "v5",
+              "y": 0.82
+            },
+            {
+              "x": "v6",
+              "y": 0.88
+            },
+            {
+              "x": "v7",
+              "y": 0.91
+            },
+            {
+              "x": "v8",
+              "y": 0.911
+            }
+          ]
+        },
+        {
+          "label": "Context Relevance ⚠️",
+          "color": "#ef4444",
+          "points": [
+            {
+              "x": "v1",
+              "y": 0.872
+            },
+            {
+              "x": "v2",
+              "y": 0.885
+            },
+            {
+              "x": "v3",
+              "y": 0.892
+            },
+            {
+              "x": "v4",
+              "y": 0.891
+            },
+            {
+              "x": "v5",
+              "y": 0.884
+            },
+            {
+              "x": "v6",
+              "y": 0.878
+            },
+            {
+              "x": "v7",
+              "y": 0.881
+            },
+            {
+              "x": "v8",
+              "y": 0.871
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "score_dist",
+      "type": "histogram",
+      "title": "Score Distribution (v8)",
+      "x_label": "Score Range",
+      "y_label": "Cases",
+      "bins": [
+        {
+          "x": "0.0-0.2",
+          "count": 0
+        },
+        {
+          "x": "0.2-0.4",
+          "count": 2
+        },
+        {
+          "x": "0.4-0.6",
+          "count": 5
+        },
+        {
+          "x": "0.6-0.8",
+          "count": 12
+        },
+        {
+          "x": "0.8-1.0",
+          "count": 61
+        }
+      ]
+    }
+  ],
+  "summary_tables": [
+    {
+      "id": "bad_cases",
+      "title": "Failed Cases (8 total)",
+      "columns": [
+        "case_id",
+        "input",
+        "issue"
+      ],
+      "rows": [
+        {
+          "case_id": 0,
+          "input": "Case 0",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 1,
+          "input": "Case 1",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 2,
+          "input": "Case 2",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 3,
+          "input": "Case 3",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 4,
+          "input": "Case 4",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 5,
+          "input": "Case 5",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 6,
+          "input": "Case 6",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 7,
+          "input": "Case 7",
+          "issue": "Score below threshold"
+        }
+      ],
+      "paginate": true
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "n_cases": 80,
+  "dataset_id": "rag_research_v2",
+  "version_hash": "4d0f0bf768b1ee4e",
+  "content_hash": "4d0f0bf768b1ee4ea7f871eaec15da67840c89a5145c310cb9a9dbea20678589",
+  "source_path": "data/datasets/rag_research_v2/test_cases.json"
+}

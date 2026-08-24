@@ -1,0 +1,22 @@
+{
+  "run_id": "rag_eval_005",
+  "project": "rag_research",
+  "triggered_by": "agent",
+  "timestamp": "2026-08-13T10:01:52Z",
+  "status": "completed",
+  "overall_score": 0.873,
+  "pass_rate": 0.85,
+  "fields": {
+    "answer_quality": {
+      "field_score": 0.873
+    }
+  },
+  "metrics": [
+    "accuracy",
+    "completeness",
+    "no_hallucination",
+    "json_schema",
+    "keyword_hit",
+    "sentence_count"
+  ]
+}

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>EvalForge Demo Setup</title>
+<style>
+  body { font-family: -apple-system, sans-serif; max-width: 600px; margin: 80px auto; padding: 20px; }
+  h1 { color: #4f46e5; }
+  .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin: 16px 0; }
+  button { background: #4f46e5; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 16px; cursor: pointer; }
+  button:hover { background: #4338ca; }
+  .note { color: #64748b; font-size: 14px; margin-top: 16px; }
+  .success { color: #22c55e; font-weight: bold; }
+</style>
+</head>
+<body>
+<h1>🚀 EvalForge Demo Setup</h1>
+<p>This page sets up 3 demo projects in your browser so you can explore the pre-built evaluation data.</p>
+
+<div class="card">
+  <h3>Demo Projects:</h3>
+  <ul>
+    <li><strong>rag_research</strong> — RAG Research Assistant (8 runs, evidence grounding story)</li>
+    <li><strong>customer_support</strong> — Customer Support Agent (4 runs, hallucination regression)</li>
+    <li><strong>tool_agent</strong> — Travel Planning Agent (3 runs, tool-order weak spot)</li>
+  </ul>
+</div>
+
+<button onclick="setup()">🎯 Set Up Demo Projects</button>
+<div id="status"></div>
+<p class="note">After setup, you'll be redirected to the main EvalForge page.</p>
+
+<script>
+function setup() {
+  const projects = ['customer_support', 'rag_research', 'tool_agent'];
+  localStorage.setItem('deepeval_projects', JSON.stringify(projects));
+  localStorage.setItem('deepeval_current_project', 'rag_research');
+  document.getElementById('status').innerHTML = '<p class="success">✅ Demo projects created! Redirecting...</p>';
+  setTimeout(() => { window.location.href = '/'; }, 1000);
+}
+</script>
+</body>
+</html>

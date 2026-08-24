@@ -3,7 +3,7 @@ name: evalplatform-orchestrator
 description: 使用 evalplatform 平台进行 LLM 评测的全流程编排。帮用户描述业务、整理数据、生成指标、导出评测 Skill、安装执行。
 ---
 
-# EvalPlatform Orchestrator
+# EvalForge Orchestrator
 
 你是 evalplatform 平台的编排代理。你的任务：帮用户完成从"我有个测试集想评测"到"拿到评测报告"的全流程。
 
@@ -318,7 +318,7 @@ python3 skills/version-manager/record_run.py \
 在最终报告汇报后，追加一行：
 
 ```
-📌 Run 已记录，可在 EvalPlatform UI 的 🕐 Run 历史 Tab 查看，或运行:
+📌 Run 已记录，可在 EvalForge UI 的 🕐 Run 历史 Tab 查看，或运行:
    python3 skills/version-manager/list_runs.py --project {project}
 ```
 

@@ -1,0 +1,84 @@
+{
+  "manifest_version": "1.0",
+  "run_id": "support_eval_004",
+  "created_at": "2026-08-16T10:01:52Z",
+  "triggered_by": "agent",
+  "dataset": {
+    "dataset_id": "customer_support_v2",
+    "version_hash": "16091fd483cc1bc4",
+    "content_hash": "16091fd483cc1bc41ebae0d60b1796e7277446810a277754d730cbd27376bebd",
+    "n_cases": 60,
+    "source_path": "data/datasets/customer_support_v2/test_cases.json"
+  },
+  "metrics": [
+    {
+      "metric_id": "accuracy",
+      "version_hash": "e0d70d789104b6f83ef98db01dd91d24217bd9e99b3791250498205791844b2a",
+      "instance": {
+        "zone": "score",
+        "weight": 0.3
+      }
+    },
+    {
+      "metric_id": "completeness",
+      "version_hash": "127dbd2b16df68e58439a030beec58b15d301991ee547707b99bba2558b5e701",
+      "instance": {
+        "zone": "score",
+        "weight": 0.25
+      }
+    },
+    {
+      "metric_id": "no_hallucination",
+      "version_hash": "1303d683105e0c075cced912c4af1de8eafa18276cc50d173553dcdec97eacfc",
+      "instance": {
+        "zone": "score",
+        "weight": 0.25
+      }
+    },
+    {
+      "metric_id": "json_schema",
+      "version_hash": "f5b6ed16c857ff3c0a69b616312d0c29695df7904b2f0536b4924b29446ef241",
+      "instance": {
+        "zone": "gate"
+      }
+    },
+    {
+      "metric_id": "keyword_hit",
+      "version_hash": "81ea90860b1a17d238064b07dd0b08a6d9fb853078a75885c7ec36f4d16e6600",
+      "instance": {
+        "zone": "score",
+        "weight": 0.1
+      }
+    },
+    {
+      "metric_id": "sentence_count",
+      "version_hash": "f97f03d4e2cc740c4447d9ed956397074975370653e5e87cfe708a9693ae297d",
+      "instance": {
+        "zone": "score",
+        "weight": 0.1
+      }
+    }
+  ],
+  "skill": {
+    "name": "Customer Support Agent v4 - Added few-shot examples, optimized system prompt",
+    "content_hash": "e802c3064c849b5f1db4f358e6875c2b19cc54c66d2e4e3c48555a2d9a6275a4"
+  },
+  "model": {
+    "model_id": "gpt-4o",
+    "base_url": "https://api.openai.com/v1"
+  },
+  "judge_model": {
+    "model_id": "gpt-4o",
+    "base_url": "https://api.openai.com/v1"
+  },
+  "environment": {
+    "python_version": "3.12.0",
+    "platform": "macOS-14.0",
+    "dependencies": {
+      "deepeval": "1.2.0",
+      "openai": "1.0.0"
+    }
+  },
+  "extra": {},
+  "manifest_hash": "d172b41ad09a7049879d5466cad2b59fc241ab537844349b489b88f1026b87ac"
+}

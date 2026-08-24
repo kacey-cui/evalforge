@@ -1,0 +1,285 @@
+{
+  "skill": "RAG Assistant v2 - Switched to GPT-4o",
+  "created_at": "2026-08-07T10:01:52Z",
+  "n_cases": 80,
+  "n_passed": 64,
+  "pass_rate": 0.81,
+  "overall_score": 0.838,
+  "grade": "B",
+  "fields": {
+    "answer_quality": {
+      "field_score": 0.838,
+      "metrics": [
+        {
+          "name": "Answer Correctness",
+          "mean": 0.907,
+          "std": 0.12
+        },
+        {
+          "name": "Context Relevance",
+          "mean": 0.885,
+          "std": 0.12
+        },
+        {
+          "name": "Faithfulness",
+          "mean": 0.861,
+          "std": 0.12
+        },
+        {
+          "name": "Evidence Grounding",
+          "mean": 0.738,
+          "std": 0.12
+        },
+        {
+          "name": "Citation Accuracy",
+          "mean": 0.712,
+          "std": 0.12
+        },
+        {
+          "name": "Evidence Coverage",
+          "mean": 0.681,
+          "std": 0.12
+        }
+      ]
+    }
+  },
+  "cases": [],
+  "bad_cases": [
+    {
+      "case_id": 0,
+      "input": "Case 0",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 1,
+      "input": "Case 1",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 2,
+      "input": "Case 2",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 3,
+      "input": "Case 3",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 4,
+      "input": "Case 4",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 5,
+      "input": "Case 5",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 6,
+      "input": "Case 6",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 7,
+      "input": "Case 7",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 8,
+      "input": "Case 8",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 9,
+      "input": "Case 9",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 10,
+      "input": "Case 10",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 11,
+      "input": "Case 11",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 12,
+      "input": "Case 12",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 13,
+      "input": "Case 13",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 14,
+      "input": "Case 14",
+      "issue": "Score below threshold"
+    }
+  ],
+  "config": {
+    "model": {
+      "modelId": "gpt-4o",
+      "baseUrl": "https://api.openai.com/v1"
+    },
+    "metrics": [
+      {
+        "name": "accuracy",
+        "type": "score"
+      },
+      {
+        "name": "completeness",
+        "type": "score"
+      },
+      {
+        "name": "no_hallucination",
+        "type": "score"
+      },
+      {
+        "name": "json_schema",
+        "type": "gate"
+      }
+    ]
+  },
+  "summary_charts": [
+    {
+      "id": "metric_breakdown",
+      "type": "bar",
+      "title": "Metric Breakdown — 002",
+      "x_label": "Metric",
+      "y_label": "Score",
+      "y_min": 0,
+      "y_max": 1,
+      "series": [
+        {
+          "label": "Score",
+          "color": "#f59e0b",
+          "points": [
+            {
+              "x": "Correctness",
+              "y": 0.907
+            },
+            {
+              "x": "Relevance",
+              "y": 0.885
+            },
+            {
+              "x": "Faithfulness",
+              "y": 0.861
+            },
+            {
+              "x": "Grounding",
+              "y": 0.738
+            },
+            {
+              "x": "Citation",
+              "y": 0.712
+            },
+            {
+              "x": "Coverage",
+              "y": 0.681
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "summary_tables": [
+    {
+      "id": "bad_cases",
+      "title": "Failed Cases (16 total)",
+      "columns": [
+        "case_id",
+        "input",
+        "issue"
+      ],
+      "rows": [
+        {
+          "case_id": 0,
+          "input": "Case 0",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 1,
+          "input": "Case 1",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 2,
+          "input": "Case 2",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 3,
+          "input": "Case 3",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 4,
+          "input": "Case 4",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 5,
+          "input": "Case 5",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 6,
+          "input": "Case 6",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 7,
+          "input": "Case 7",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 8,
+          "input": "Case 8",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 9,
+          "input": "Case 9",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 10,
+          "input": "Case 10",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 11,
+          "input": "Case 11",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 12,
+          "input": "Case 12",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 13,
+          "input": "Case 13",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 14,
+          "input": "Case 14",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 15,
+          "input": "Case 15",
+          "issue": "Score below threshold"
+        }
+      ],
+      "paginate": true
+    }
+  ]
+}

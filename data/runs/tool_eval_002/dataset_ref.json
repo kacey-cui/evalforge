@@ -1,0 +1,7 @@
+{
+  "n_cases": 40,
+  "dataset_id": "tool_agent_v1",
+  "version_hash": "11be17b6e8c60b29",
+  "content_hash": "11be17b6e8c60b29d9492804ade4eb4f1310190c9efff231683939187aa703ff",
+  "source_path": "data/datasets/tool_agent_v1/test_cases.json"
+}

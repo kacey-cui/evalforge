@@ -1,6 +1,6 @@
 """
-git_bridge.py — EvalPlatform Git REST 桥接服务
-端口: 8081
+git_bridge.py — EvalForge Git REST 桥接服务
+端口: 9091
 """
 import json
 import os
@@ -142,6 +142,60 @@ def list_runs():
     project = request.args.get("project", "")
     runs = _run_ids_from_log(project)
     return jsonify(runs)
+
+
+@app.route("/api/projects", methods=["GET", "OPTIONS"])
+def list_projects():
+    """GET /api/projects — list projects backed by data/projects/*/canvas.json."""
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    projects_dir = REPO_ROOT / "data" / "projects"
+    projects = []
+    if projects_dir.exists():
+        for project_dir in sorted(projects_dir.iterdir()):
+            if not project_dir.is_dir():
+                continue
+            canvas_path = project_dir / "canvas.json"
+            item = {"id": project_dir.name, "has_canvas": canvas_path.exists()}
+            if canvas_path.exists():
+                try:
+                    canvas = json.loads(canvas_path.read_text("utf-8"))
+                    item["name"] = canvas.get("skillName") or project_dir.name
+                    item["dataset"] = canvas.get("dataset")
+                    item["n_fields"] = len(canvas.get("canvasFields") or canvas.get("fields") or [])
+                except Exception:
+                    item["name"] = project_dir.name
+                    item["n_fields"] = 0
+            else:
+                item["name"] = project_dir.name
+                item["n_fields"] = 0
+            projects.append(item)
+
+    return jsonify(projects)
+
+
+@app.route("/api/metrics", methods=["GET", "OPTIONS"])
+def list_metrics():
+    """GET /api/metrics — list global metric templates from data/metrics."""
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    metrics = []
+    metrics_dir = REPO_ROOT / "data" / "metrics"
+    for subdir in ["non_llm", "llm"]:
+        search_dir = metrics_dir / subdir
+        if not search_dir.exists():
+            continue
+        for f in sorted(search_dir.glob("*.json")):
+            try:
+                data = json.loads(f.read_text("utf-8"))
+            except Exception:
+                continue
+            if isinstance(data, dict) and data.get("id"):
+                metrics.append(data)
+
+    return jsonify(metrics)
 
 
 @app.route("/api/runs/<run_id>", methods=["GET", "OPTIONS"])
@@ -353,6 +407,62 @@ def project_canvas_post(project):
     return jsonify({"ok": True, "path": str(canvas_path.relative_to(REPO_ROOT))})
 
 
+@app.route("/api/datasets/<dataset_id>", methods=["GET", "OPTIONS"])
+def dataset_get(dataset_id):
+    """GET /api/datasets/<dataset_id> — read dataset metadata and cases."""
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    ds_dir = REPO_ROOT / "data" / "datasets" / dataset_id
+    dataset_path = ds_dir / "dataset.json"
+    cases_path = ds_dir / "test_cases.json"
+    if not dataset_path.exists() or not cases_path.exists():
+        return jsonify({"error": f"dataset {dataset_id} not found"}), 404
+
+    try:
+        dataset = json.loads(dataset_path.read_text("utf-8"))
+        cases = json.loads(cases_path.read_text("utf-8"))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    return jsonify({"dataset": dataset, "cases": cases})
+
+
+@app.route("/api/projects/<project>/dataset", methods=["GET", "OPTIONS"])
+def project_dataset_get(project):
+    """GET /api/projects/<project>/dataset — read dataset referenced by canvas.json."""
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    canvas_path = REPO_ROOT / "data" / "projects" / project / "canvas.json"
+    if not canvas_path.exists():
+        return jsonify({"error": "canvas.json not found"}), 404
+
+    try:
+        canvas = json.loads(canvas_path.read_text("utf-8"))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    dataset_ref = canvas.get("dataset") or {}
+    dataset_id = dataset_ref.get("dataset_id")
+    if not dataset_id:
+        return jsonify({"error": "project canvas has no dataset.dataset_id"}), 404
+
+    ds_dir = REPO_ROOT / "data" / "datasets" / dataset_id
+    dataset_path = ds_dir / "dataset.json"
+    cases_path = ds_dir / "test_cases.json"
+    if not dataset_path.exists() or not cases_path.exists():
+        return jsonify({"error": f"dataset {dataset_id} not found"}), 404
+
+    try:
+        dataset = json.loads(dataset_path.read_text("utf-8"))
+        cases = json.loads(cases_path.read_text("utf-8"))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    return jsonify({"project": project, "dataset_ref": dataset_ref, "dataset": dataset, "cases": cases})
+
+
 @app.route("/api/projects/<project>/report", methods=["GET", "OPTIONS"])
 def project_latest_report(project):
     """GET /api/projects/<project>/report — 返回该项目最近一次 Run 的 results.json"""
@@ -377,5 +487,5 @@ def project_latest_report(project):
 # ─── 启动 ────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    print("EvalPlatform git_bridge running on http://localhost:8081")
-    app.run(host="127.0.0.1", port=8081, debug=False)
+    print("EvalForge git_bridge running on http://localhost:9091")
+    app.run(host="127.0.0.1", port=9091, debug=False)

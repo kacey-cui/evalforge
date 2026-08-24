@@ -1,0 +1,70 @@
+{
+  "skillName": "tool_agent_eval",
+  "description": "Travel Planning Agent evaluation with tool-use metrics",
+  "modelId": "gpt-4o",
+  "modelBaseUrl": "https://api.openai.com/v1",
+  "judgeModelId": "gpt-4o",
+  "judgeModelBaseUrl": "https://api.openai.com/v1",
+  "canvasFields": [
+    {
+      "name": "task_completion",
+      "gatePipeline": [
+        {
+          "metricId": "json_schema",
+          "params": {
+            "schema": "{}"
+          }
+        }
+      ],
+      "scorePipeline": [
+        {
+          "metricId": "accuracy",
+          "params": {
+            "threshold": 0.7
+          },
+          "weight": 0.35,
+          "strictness": 1.0
+        },
+        {
+          "metricId": "completeness",
+          "params": {
+            "threshold": 0.7
+          },
+          "weight": 0.25,
+          "strictness": 1.0
+        },
+        {
+          "metricId": "no_hallucination",
+          "params": {
+            "threshold": 0.7
+          },
+          "weight": 0.2,
+          "strictness": 1.0
+        },
+        {
+          "metricId": "latency",
+          "params": {
+            "max_seconds": 30,
+            "threshold": 1.0
+          },
+          "weight": 0.1,
+          "strictness": 1.0
+        },
+        {
+          "metricId": "keyword_hit",
+          "params": {
+            "required_keywords": "[]",
+            "threshold": 0.5
+          },
+          "weight": 0.1,
+          "strictness": 1.0
+        }
+      ]
+    }
+  ],
+  "dataset": {
+    "dataset_id": "tool_agent_v1",
+    "n_cases": 40
+  },
+  "template": "deepeval"
+}

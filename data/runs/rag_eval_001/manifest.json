@@ -1,0 +1,84 @@
+{
+  "manifest_version": "1.0",
+  "run_id": "rag_eval_001",
+  "created_at": "2026-08-05T10:01:52Z",
+  "triggered_by": "agent",
+  "dataset": {
+    "dataset_id": "rag_research_v1",
+    "version_hash": "21017dd712bc5f24",
+    "content_hash": "21017dd712bc5f245c1741f0e2e944fb5d971cde4b9f9d9477c37e0b06f279ce",
+    "n_cases": 80,
+    "source_path": "data/datasets/rag_research_v1/test_cases.json"
+  },
+  "metrics": [
+    {
+      "metric_id": "accuracy",
+      "version_hash": "106e657129ea85c2780ee5799223d3459a07994bca8619043e4a55732c193346",
+      "instance": {
+        "zone": "score",
+        "weight": 0.3
+      }
+    },
+    {
+      "metric_id": "completeness",
+      "version_hash": "127dbd2b16df68e58439a030beec58b15d301991ee547707b99bba2558b5e701",
+      "instance": {
+        "zone": "score",
+        "weight": 0.25
+      }
+    },
+    {
+      "metric_id": "no_hallucination",
+      "version_hash": "5f645e82b951669763a3ff55ba6127e57cc1766f6de30ed74670318bb98deae5",
+      "instance": {
+        "zone": "score",
+        "weight": 0.25
+      }
+    },
+    {
+      "metric_id": "json_schema",
+      "version_hash": "f5b6ed16c857ff3c0a69b616312d0c29695df7904b2f0536b4924b29446ef241",
+      "instance": {
+        "zone": "gate"
+      }
+    },
+    {
+      "metric_id": "keyword_hit",
+      "version_hash": "27804098ef59a31624601c32b3e4f341dd0025674321536ac38e2251a1d53e88",
+      "instance": {
+        "zone": "score",
+        "weight": 0.1
+      }
+    },
+    {
+      "metric_id": "sentence_count",
+      "version_hash": "28a27b56b5de6a57d8e005667623e92492cbbbcf76fab91eee07bed8741e793d",
+      "instance": {
+        "zone": "score",
+        "weight": 0.1
+      }
+    }
+  ],
+  "skill": {
+    "name": "RAG Assistant v1 - Baseline with basic retrieval",
+    "content_hash": "30af56a5268101ea4739e5c8496987177df90d2a8dbe58cd4d2828beb475a479"
+  },
+  "model": {
+    "model_id": "gpt-4o-mini",
+    "base_url": "https://api.openai.com/v1"
+  },
+  "judge_model": {
+    "model_id": "gpt-4o",
+    "base_url": "https://api.openai.com/v1"
+  },
+  "environment": {
+    "python_version": "3.12.0",
+    "platform": "macOS-14.0",
+    "dependencies": {
+      "deepeval": "1.2.0",
+      "openai": "1.0.0"
+    }
+  },
+  "extra": {},
+  "manifest_hash": "c6ecab95746ebb72a7e6f1c043eb4103aac3c7d16e502836b00cc88d3c1594ef"
+}

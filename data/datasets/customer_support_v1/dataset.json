@@ -1,0 +1,20 @@
+{
+  "dataset_id": "customer_support_v1",
+  "name": "Customer Support Q&A v1",
+  "description": "60 realistic customer support cases covering policy, account, shipping, returns, payment, edge cases, multi-turn context, and hallucination-prone questions.",
+  "n_cases": 60,
+  "version_hash": "1b85842c939a4a9e",
+  "content_hash": "1b85842c939a4a9e61c2678c2943a58748a260421984f1a5db6e1791f7137c86",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "input": {
+        "type": "string"
+      },
+      "expected_output": {
+        "type": "string"
+      }
+    }
+  },
+  "created_at": "2026-08-05T10:00:00Z"
+}

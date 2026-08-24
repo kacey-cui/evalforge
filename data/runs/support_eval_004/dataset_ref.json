@@ -1,0 +1,7 @@
+{
+  "n_cases": 63,
+  "dataset_id": "customer_support_v2",
+  "version_hash": "44d499d25c4d3687",
+  "content_hash": "44d499d25c4d3687c4ac0e2bc8d6da155d7df5d6ca7430464eaea6f58e549866",
+  "source_path": "data/datasets/customer_support_v2/test_cases.json"
+}

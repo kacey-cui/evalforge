@@ -23,6 +23,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from run_store import RunStore
 from metric_store import MetricStore
 from dataset_store import DatasetStore
+from dataset_versioning import diff_case
 
 
 # ── Structured response helpers ────────────────────────────────────────────────
@@ -166,12 +167,13 @@ def _compare_dataset(manifest_a, manifest_b, dataset_store):
     dataset_id_b = ds_b.get("dataset_id")
 
     if dataset_id_a != dataset_id_b:
+        detail = _diff_dataset_family_versions(dataset_id_a, dataset_id_b, dataset_store)
         return {
             "status": "modified",
             "dataset_id": f"{dataset_id_a} → {dataset_id_b}",
             "version_a": ds_a.get("version_hash"),
             "version_b": ds_b.get("version_hash"),
-            "detail": f"数据集不同: {dataset_id_a} vs {dataset_id_b}",
+            "detail": detail or f"数据集不同: {dataset_id_a} vs {dataset_id_b}",
         }
 
     version_hash_a = ds_a.get("version_hash")
@@ -202,6 +204,73 @@ def _compare_dataset(manifest_a, manifest_b, dataset_store):
         "version_a": version_hash_a,
         "version_b": version_hash_b,
         "detail": detail or "数据集版本不同，无法获取详细 diff",
+    }
+
+
+def _dataset_family_key(dataset_id):
+    """Return family prefix for ids like ``rag_research_v1`` / ``rag_research_v2``."""
+    if not dataset_id:
+        return None
+    parts = str(dataset_id).rsplit("_v", 1)
+    if len(parts) != 2 or not parts[1].isdigit():
+        return None
+    return parts[0]
+
+
+def _diff_dataset_family_versions(dataset_id_a, dataset_id_b, dataset_store):
+    """Compare current case files for versioned dataset ids in the same family."""
+    if _dataset_family_key(dataset_id_a) != _dataset_family_key(dataset_id_b):
+        return None
+
+    try:
+        data_a = dataset_store.get(dataset_id_a)
+        data_b = dataset_store.get(dataset_id_b)
+    except Exception:
+        return None
+    if not data_a.get("ok") or not data_b.get("ok"):
+        return None
+
+    cases_a = data_a["data"].get("cases") or []
+    cases_b = data_b["data"].get("cases") or []
+    by_id_a = {c.get("case_id"): c for c in cases_a if isinstance(c, dict)}
+    by_id_b = {c.get("case_id"): c for c in cases_b if isinstance(c, dict)}
+
+    ids_a = set(by_id_a)
+    ids_b = set(by_id_b)
+    matched_ids = sorted(ids_a & ids_b)
+    added_ids = sorted(ids_b - ids_a)
+    removed_ids = sorted(ids_a - ids_b)
+
+    modified_cases = []
+    for cid in matched_ids:
+        changes = diff_case(by_id_a[cid], by_id_b[cid])
+        if changes:
+            modified_cases.append({"case_id": cid, "changes": changes})
+
+    added_cases = [
+        {"case_id": cid, "changes": [{"field": "*", "type": "added", "after": by_id_b[cid]}]}
+        for cid in added_ids
+    ]
+    removed_cases = [
+        {"case_id": cid, "changes": [{"field": "*", "type": "removed", "before": by_id_a[cid]}]}
+        for cid in removed_ids
+    ]
+
+    return {
+        "dataset_id_a": dataset_id_a,
+        "dataset_id_b": dataset_id_b,
+        "summary": {
+            "n_cases_a": len(cases_a),
+            "n_cases_b": len(cases_b),
+            "matched": len(matched_ids),
+            "added": len(added_cases),
+            "removed": len(removed_cases),
+            "modified": len(modified_cases),
+        },
+        "schema_changes": [],
+        "added_cases": added_cases,
+        "removed_cases": removed_cases,
+        "modified_cases": modified_cases,
     }
 
 

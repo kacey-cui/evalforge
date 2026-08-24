@@ -1,0 +1,27 @@
+{
+  "dataset_id": "rag_research_v2",
+  "name": "RAG Research Assistant v2",
+  "description": "Refined v2 with 5 cases improved from pattern C to A based on model fine-tuning. Same 80 cases, better grounding.",
+  "n_cases": 80,
+  "version_hash": "4d0f0bf768b1ee4e",
+  "content_hash": "4d0f0bf768b1ee4ea7f871eaec15da67840c89a5145c310cb9a9dbea20678589",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "input": {
+        "type": "string"
+      },
+      "expected_output": {
+        "type": "string"
+      }
+    }
+  },
+  "created_at": "2026-08-14T10:00:00Z",
+  "changelog": {
+    "added": 5,
+    "modified": 5,
+    "removed": 5,
+    "previous_version": "rag_research_v1",
+    "summary": "Fixed 5 cases with wrong answers. Removed 5 redundant cases. Added 5 new edge cases."
+  }
+}

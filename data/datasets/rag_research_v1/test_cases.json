@@ -1,0 +1,952 @@
+[
+  {
+    "case_id": 0,
+    "input": "According to the 2025 annual report, what was the revenue growth rate?",
+    "expected_output": "The revenue growth rate was 24.3% year-over-year, driven primarily by cloud services and enterprise subscriptions.",
+    "retrieval_context": "2025 Annual Report: Revenue grew 24.3% YoY to $4.2B. Cloud services contributed 62% of total revenue, up from 54% in 2024.",
+    "evidence": [
+      "2025 Annual Report, page 3: 'Revenue grew 24.3% year-over-year.'"
+    ],
+    "metadata": {
+      "category": "financial",
+      "pattern": "A_high_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 1,
+    "input": "What were the key findings of Smith et al. (2024) on battery degradation?",
+    "expected_output": "Smith et al. found lithium-ion batteries degrade 40% faster when charged above 90% capacity, with electrolyte decomposition as the primary mechanism.",
+    "retrieval_context": "Smith, J. et al. (2024). Journal of Energy Storage, 45, 102389. Batteries at 100% charge showed 40% faster loss vs 80% limit.",
+    "evidence": [
+      "Smith et al. (2024), Abstract: 'batteries charged above 90% exhibited 40% accelerated degradation.'"
+    ],
+    "metadata": {
+      "category": "research",
+      "pattern": "A_high_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 2,
+    "input": "Summarize the IPCC AR6 sea level rise projections by 2100.",
+    "expected_output": "IPCC AR6 projects sea level rise of 0.28-0.55m under SSP1-1.9 and 0.63-1.01m under SSP5-8.5. Rate accelerating from 1.4mm/yr to 3.7mm/yr.",
+    "retrieval_context": "IPCC AR6 WG1: SSP1-1.9: 0.28-0.55m, SSP5-8.5: 0.63-1.01m by 2100. Rate: 1.4mm/yr (1901-1990) to 3.7mm/yr (2006-2018).",
+    "evidence": [
+      "IPCC AR6 SPM Table SPM.1: SSP1-1.9 range 0.28-0.55m, SSP5-8.5 range 0.63-1.01m."
+    ],
+    "metadata": {
+      "category": "climate",
+      "pattern": "A_high_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 3,
+    "input": "What is the capital of Mongolia?",
+    "expected_output": "The capital of Mongolia is Ulaanbaatar.",
+    "retrieval_context": "Mongolia: landlocked country in East Asia. Capital and largest city: Ulaanbaatar, home to half of 3.3 million population.",
+    "evidence": [
+      "Encyclopedia: 'Ulaanbaatar is the capital of Mongolia.'"
+    ],
+    "metadata": {
+      "category": "general",
+      "pattern": "A_high_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 4,
+    "input": "What was Japan's GDP in 2024?",
+    "expected_output": "Japan's GDP in 2024 was approximately $4.2 trillion, making it the world's fourth-largest economy, with 0.9% real GDP growth.",
+    "retrieval_context": "IMF WEO Oct 2024: Japan GDP $4.21 trillion, 4th largest. Real GDP growth: 0.9%.",
+    "evidence": [
+      "IMF WEO Oct 2024: 'Japan: GDP $4.21 trillion, growth 0.9%.'"
+    ],
+    "metadata": {
+      "category": "economics",
+      "pattern": "A_high_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 5,
+    "input": "What is the mechanism of CRISPR-Cas9 gene editing?",
+    "expected_output": "CRISPR-Cas9 uses a guide RNA to direct the Cas9 enzyme to a specific DNA sequence, creating a double-strand break repaired by NHEJ or HDR.",
+    "retrieval_context": "CRISPR-Cas9: gRNA directs Cas9 to complementary DNA. Cas9 creates DSB. Cell repairs via NHEJ or HDR.",
+    "evidence": [
+      "Doudna & Charpentier (2014): 'Cas9 programmed by guide RNA to cleave specific DNA sequences.'"
+    ],
+    "metadata": {
+      "category": "science",
+      "pattern": "A_high_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 6,
+    "input": "What were the main causes of the 2008 financial crisis?",
+    "expected_output": "The 2008 crisis was caused by subprime mortgage lending, securitization of risky loans, excessive leverage, and insufficient regulatory oversight.",
+    "retrieval_context": "FCIC Report (2011): Subprime lending, MBS, excessive leverage, regulatory failures were primary causes.",
+    "evidence": [
+      "FCIC Report (2011): 'The crisis was avoidable and caused by widespread failures in financial regulation.'"
+    ],
+    "metadata": {
+      "category": "economics",
+      "pattern": "A_high_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 7,
+    "input": "What is the difference between supervised and unsupervised learning?",
+    "expected_output": "Supervised learning uses labeled data to predict outputs; unsupervised learning finds patterns in unlabeled data without predefined outputs.",
+    "retrieval_context": "ML textbook: Supervised uses labeled data (input-output pairs). Unsupervised discovers structure in unlabeled data.",
+    "evidence": [
+      "ML textbook ch1: 'Supervised learning uses labeled data; unsupervised learning uses unlabeled data.'"
+    ],
+    "metadata": {
+      "category": "ai",
+      "pattern": "A_high_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 8,
+    "input": "According to WHO, what are the leading risk factors for cardiovascular disease?",
+    "expected_output": "Leading risk factors: high blood pressure, tobacco use, high cholesterol, physical inactivity, unhealthy diet, obesity.",
+    "retrieval_context": "WHO Fact Sheet (2024): Hypertension, tobacco, hyperlipidemia, inactivity, unhealthy diet, obesity.",
+    "evidence": [
+      "WHO Fact Sheet: 'Cardiovascular disease risk factors include hypertension, tobacco use, and unhealthy diet.'"
+    ],
+    "metadata": {
+      "category": "health",
+      "pattern": "A_high_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 9,
+    "input": "What did the 2024 Nobel Prize in Chemistry recognize?",
+    "expected_output": "Computational protein design and protein structure prediction using artificial intelligence.",
+    "retrieval_context": "Nobel Foundation: 2024 Chemistry Prize for computational protein design and AI-based protein structure prediction.",
+    "evidence": [
+      "Nobel Prize announcement (2024): 'for computational protein design and protein structure prediction.'"
+    ],
+    "metadata": {
+      "category": "science",
+      "pattern": "A_high_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 10,
+    "input": "What is the EU Fit for 55 emission reduction target?",
+    "expected_output": "EU Fit for 55 targets a 55% reduction in greenhouse gas emissions by 2030 compared to 1990 levels.",
+    "retrieval_context": "EU Commission: Fit for 55 aims to reduce GHG emissions by 55% by 2030 vs 1990.",
+    "evidence": [
+      "EU Commission: 'Fit for 55 targets 55% emission reduction by 2030.'"
+    ],
+    "metadata": {
+      "category": "climate",
+      "pattern": "A_high_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 11,
+    "input": "What is the significance of the Paris Agreement 1.5C target?",
+    "expected_output": "The 1.5C target limits global warming to 1.5C above pre-industrial levels. IPCC SR1.5 found impacts escalate significantly beyond 1.5C.",
+    "retrieval_context": "IPCC SR1.5 (2018): Limiting warming to 1.5C requires rapid, far-reaching transitions. At 2C, coral reefs face >99% loss vs 70-90% at 1.5C.",
+    "evidence": [
+      "IPCC SR1.5 (2018): 'Limiting warming to 1.5C requires unprecedented transitions.'"
+    ],
+    "metadata": {
+      "category": "climate",
+      "pattern": "A_high_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 12,
+    "input": "What percentage of global electricity came from renewables in 2024?",
+    "expected_output": "Renewables generated approximately 30% of global electricity in 2024, with solar and wind contributing the majority of new capacity.",
+    "retrieval_context": "IEA Electricity 2024: Renewables reached 30% of global electricity generation. Solar PV additions grew 50% YoY.",
+    "evidence": [
+      "IEA Electricity 2024: 'Renewables reached 30% of global electricity generation.'"
+    ],
+    "metadata": {
+      "category": "energy",
+      "pattern": "A_high_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 13,
+    "input": "What is quantum entanglement?",
+    "expected_output": "Quantum entanglement is when two or more particles become correlated such that the quantum state of each cannot be described independently, regardless of distance.",
+    "retrieval_context": "Physics: Entanglement occurs when particles interact such that their quantum states are interdependent. Einstein called it 'spooky action at a distance'.",
+    "evidence": [
+      "Physics textbook: 'Quantum entanglement: particles share quantum states regardless of distance.'"
+    ],
+    "metadata": {
+      "category": "physics",
+      "pattern": "A_high_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 14,
+    "input": "How does mRNA vaccine technology work?",
+    "expected_output": "mRNA vaccines deliver messenger RNA instructing cells to produce a pathogen protein, triggering immune response without using the actual pathogen.",
+    "retrieval_context": "mRNA vaccines: deliver mRNA encoding pathogen protein. Cells produce protein. Immune system builds antibodies and T-cell response.",
+    "evidence": [
+      "Kariko & Weissman (2005): 'Modified nucleosides in mRNA reduce innate immune activation.'"
+    ],
+    "metadata": {
+      "category": "medicine",
+      "pattern": "A_high_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 15,
+    "input": "What is dark matter?",
+    "expected_output": "Dark matter is invisible matter comprising about 27% of the universe's mass-energy. Evidence from galaxy rotation curves, gravitational lensing, and CMB.",
+    "retrieval_context": "Astrophysics: Dark matter ~27% of universe (vs 5% ordinary matter). Evidence: Vera Rubin's galaxy rotation curves, gravitational lensing, CMB anisotropies.",
+    "evidence": [
+      "Astrophysics review: 'Dark matter comprises 27% of the universe's mass-energy content.'"
+    ],
+    "metadata": {
+      "category": "astronomy",
+      "pattern": "A_high_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 16,
+    "input": "What are the main provisions of GDPR?",
+    "expected_output": "GDPR: right to access (Art.15), right to erasure (Art.17), right to data portability (Art.20), explicit consent required (Art.7). Applies to any org processing EU data.",
+    "retrieval_context": "GDPR (2018): Key rights: access, rectification, erasure, restriction, portability, objection. Requires explicit consent, breach notification, DPO appointment.",
+    "evidence": [
+      "GDPR Article 15: 'The data subject shall have the right to obtain confirmation as to whether personal data are being processed.'"
+    ],
+    "metadata": {
+      "category": "law",
+      "pattern": "A_high_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 17,
+    "input": "What is the current status of nuclear fusion research?",
+    "expected_output": "NIF achieved first net energy gain in Dec 2022 (3.15 MJ out from 2.05 MJ in). ITER expected first plasma in 2030s. Commercial fusion remains decades away.",
+    "retrieval_context": "NIF (Dec 2022): First controlled fusion ignition. 3.15 MJ output from 2.05 MJ input. ITER under construction in France.",
+    "evidence": [
+      "DOE (Dec 2022): 'First fusion ignition achieved at National Ignition Facility.'"
+    ],
+    "metadata": {
+      "category": "energy",
+      "pattern": "A_high_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 18,
+    "input": "What is the economic impact of AI according to McKinsey?",
+    "expected_output": "McKinsey estimates generative AI could add $2.6-4.4 trillion annually to the global economy, with largest impact in customer operations, marketing, and software engineering.",
+    "retrieval_context": "McKinsey (2023): Generative AI could add $2.6-4.4 trillion annually. Top sectors: customer operations, marketing/sales, software engineering, R&D.",
+    "evidence": [
+      "McKinsey (2023): 'Generative AI could add $2.6-4.4 trillion annually to the global economy.'"
+    ],
+    "metadata": {
+      "category": "economics",
+      "pattern": "A_high_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 19,
+    "input": "When was the Treaty of Westphalia signed and what did it establish?",
+    "expected_output": "The Treaty of Westphalia was signed in 1648, ending the Thirty Years' War and establishing state sovereignty and non-interference.",
+    "retrieval_context": "Peace of Westphalia (1648): Ended Thirty Years' War. Established territorial sovereignty, diplomatic equality. Birth of modern nation-state system.",
+    "evidence": [
+      "Historical analysis: 'The Peace of Westphalia (1648) established territorial sovereignty.'"
+    ],
+    "metadata": {
+      "category": "history",
+      "pattern": "A_high_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 20,
+    "input": "What are the common side effects of metformin?",
+    "expected_output": "Common side effects include gastrointestinal issues: nausea, diarrhea, abdominal discomfort. Long-term use can cause vitamin B12 deficiency. Rarely, lactic acidosis in kidney patients.",
+    "retrieval_context": "FDA Drug Label: Diarrhea (53%), nausea/vomiting (26%), flatulence (12%). B12 deficiency (7% long-term). Lactic acidosis (0.03/1000 patient-years).",
+    "evidence": [],
+    "metadata": {
+      "category": "medical",
+      "pattern": "B_high_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 21,
+    "input": "Explain the significance of the Rosetta Stone.",
+    "expected_output": "Discovered in 1799, the Rosetta Stone was key to deciphering Egyptian hieroglyphics because it contained the same text in hieroglyphics, Demotic, and Ancient Greek.",
+    "retrieval_context": "The Rosetta Stone (196 BC) contains a decree in three scripts. Champollion deciphered hieroglyphics in 1822.",
+    "evidence": [],
+    "metadata": {
+      "category": "history",
+      "pattern": "B_high_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 22,
+    "input": "What is the capital of Burkina Faso?",
+    "expected_output": "The capital of Burkina Faso is Ouagadougou.",
+    "retrieval_context": "Burkina Faso is a landlocked country in West Africa. Capital: Ouagadougou, population ~2.8 million.",
+    "evidence": [],
+    "metadata": {
+      "category": "general",
+      "pattern": "B_high_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 23,
+    "input": "What is photosynthesis?",
+    "expected_output": "Photosynthesis: plants convert light energy, water, CO2 into glucose and oxygen using chlorophyll. Overall: 6CO2 + 6H2O + light -> C6H12O6 + 6O2.",
+    "retrieval_context": "Photosynthesis: Light-dependent reactions produce ATP/NADPH. Calvin cycle fixes CO2 into glucose. Occurs in chloroplasts.",
+    "evidence": [],
+    "metadata": {
+      "category": "biology",
+      "pattern": "B_high_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 24,
+    "input": "What is the Pythagorean theorem?",
+    "expected_output": "In a right triangle, the square of the hypotenuse equals the sum of squares of the other two sides: a^2 + b^2 = c^2.",
+    "retrieval_context": "Pythagorean theorem: a^2 + b^2 = c^2 for right triangles. Named after Pythagoras, known earlier in Babylon.",
+    "evidence": [],
+    "metadata": {
+      "category": "math",
+      "pattern": "B_high_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 25,
+    "input": "What is the speed of light in vacuum?",
+    "expected_output": "The speed of light in vacuum is exactly 299,792,458 meters per second (approximately 300,000 km/s).",
+    "retrieval_context": "Physics: c = 299,792,458 m/s (exact since 1983). A fundamental constant. Maximum speed of information.",
+    "evidence": [],
+    "metadata": {
+      "category": "physics",
+      "pattern": "B_high_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 26,
+    "input": "What caused the fall of the Roman Empire?",
+    "expected_output": "Multiple factors: economic troubles, overexpansion, military overspending, barbarian invasions, political instability. Traditional date: 476 CE.",
+    "retrieval_context": "Historians cite: economic decline, military overextension, barbarian pressure, political corruption, division of empire (395 CE).",
+    "evidence": [],
+    "metadata": {
+      "category": "history",
+      "pattern": "B_high_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 27,
+    "input": "What is the difference between DNA and RNA?",
+    "expected_output": "DNA: double-stranded, deoxyribose, A-T C-G. RNA: single-stranded, ribose, A-U C-G. DNA stores genetic info; RNA helps express it.",
+    "retrieval_context": "DNA: double-stranded, deoxyribose. RNA: single-stranded, ribose. Types: mRNA, tRNA, rRNA. Central dogma: DNA -> RNA -> protein.",
+    "evidence": [],
+    "metadata": {
+      "category": "biology",
+      "pattern": "B_high_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 28,
+    "input": "What is Occam's razor?",
+    "expected_output": "The simplest explanation is usually the best. Among competing hypotheses, prefer the one with fewest assumptions.",
+    "retrieval_context": "Occam's razor (lex parsimoniae): 'Entities should not be multiplied beyond necessity.' William of Ockham.",
+    "evidence": [],
+    "metadata": {
+      "category": "philosophy",
+      "pattern": "B_high_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 29,
+    "input": "What is the greenhouse effect?",
+    "expected_output": "Greenhouse gases trap heat in the atmosphere, warming Earth. Essential for life but intensified by human emissions causing global warming.",
+    "retrieval_context": "Solar radiation passes through atmosphere, Earth re-emits as IR. GHGs trap IR. Natural effect essential; anthropogenic enhancement causes climate change.",
+    "evidence": [],
+    "metadata": {
+      "category": "climate",
+      "pattern": "B_high_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 30,
+    "input": "What is blockchain technology?",
+    "expected_output": "Blockchain: distributed ledger where transactions are recorded in cryptographically linked blocks, creating an immutable chain across a decentralized network.",
+    "retrieval_context": "Blockchain: Decentralized, distributed ledger. Each block contains transactions, timestamp, hash of previous block. Consensus mechanisms ensure validity.",
+    "evidence": [],
+    "metadata": {
+      "category": "technology",
+      "pattern": "B_high_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 31,
+    "input": "What is the Turing test?",
+    "expected_output": "A test of machine intelligence: if a human evaluator cannot reliably distinguish machine from human in conversation, the machine passes. Proposed by Alan Turing in 1950.",
+    "retrieval_context": "Turing test (1950): 'Imitation game' - human judge converses with both machine and human. If judge cannot tell which is which, machine passes.",
+    "evidence": [],
+    "metadata": {
+      "category": "ai",
+      "pattern": "B_high_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 32,
+    "input": "What is the butterfly effect?",
+    "expected_output": "Small changes in initial conditions can lead to large-scale, unpredictable consequences in complex systems. Popularized by meteorologist Edward Lorenz.",
+    "retrieval_context": "Lorenz (1963): Tiny differences in initial conditions produce widely diverging outcomes in chaotic systems.",
+    "evidence": [],
+    "metadata": {
+      "category": "science",
+      "pattern": "B_high_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 33,
+    "input": "What is the difference between weather and climate?",
+    "expected_output": "Weather is short-term atmospheric conditions (hours to days). Climate is long-term average of weather patterns (30+ years).",
+    "retrieval_context": "Weather: short-term - temperature, humidity, precipitation. Climate: statistical average over 30+ years.",
+    "evidence": [],
+    "metadata": {
+      "category": "climate",
+      "pattern": "B_high_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 34,
+    "input": "What is Moore's law?",
+    "expected_output": "The number of transistors on a microchip doubles approximately every two years, leading to exponential growth in computing power.",
+    "retrieval_context": "Gordon Moore (1965): Transistor count doubles ~2 years. Drove exponential growth of computing for decades.",
+    "evidence": [],
+    "metadata": {
+      "category": "technology",
+      "pattern": "B_high_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 35,
+    "input": "What is the placebo effect?",
+    "expected_output": "Patients experience real symptom improvement after receiving a treatment with no active ingredient, driven by expectation and belief.",
+    "retrieval_context": "Placebo effect: Measurable improvement not attributable to treatment. Mediated by expectation, conditioning, neurobiological mechanisms.",
+    "evidence": [],
+    "metadata": {
+      "category": "medical",
+      "pattern": "B_high_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 36,
+    "input": "What is the prisoner's dilemma?",
+    "expected_output": "Game theory scenario where two individuals acting in self-interest produce a worse outcome than if they had cooperated.",
+    "retrieval_context": "Two prisoners decide to confess or stay silent. Mutual confession = worse outcome for both than mutual cooperation.",
+    "evidence": [],
+    "metadata": {
+      "category": "economics",
+      "pattern": "B_high_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 37,
+    "input": "What is the difference between GDP and GNP?",
+    "expected_output": "GDP measures production within a country's borders. GNP measures production by a country's citizens regardless of location.",
+    "retrieval_context": "GDP: domestic production. GNP: production by nationals. GNP = GDP + income from abroad - income paid to foreigners.",
+    "evidence": [],
+    "metadata": {
+      "category": "economics",
+      "pattern": "B_high_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 38,
+    "input": "What is epigenetics?",
+    "expected_output": "Study of heritable changes in gene expression without changes to DNA sequence. Mechanisms: DNA methylation, histone modification, non-coding RNAs.",
+    "retrieval_context": "Epigenetics: heritable phenotype changes without DNA alteration. DNA methylation, histone modification, non-coding RNA regulation.",
+    "evidence": [],
+    "metadata": {
+      "category": "biology",
+      "pattern": "B_high_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 39,
+    "input": "What is the Fermi paradox?",
+    "expected_output": "The contradiction between high probability of extraterrestrial civilizations and lack of evidence. Possible explanations: Great Filter, we're early, they're avoiding us.",
+    "retrieval_context": "Fermi paradox: If universe is vast and old, why no alien contact? Great Filter: civilizations are rare or self-destruct.",
+    "evidence": [],
+    "metadata": {
+      "category": "astronomy",
+      "pattern": "B_high_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 40,
+    "input": "According to the 2025 annual report, what was the profit margin?",
+    "expected_output": "The profit margin was 35%, which was exceptional.",
+    "retrieval_context": "2025 Annual Report: Net profit margin was 18.2%, up from 16.7% in 2024. Operating margin: 22.5%. Gross margin: 58.3%.",
+    "evidence": [
+      "2025 Annual Report, page 5: 'Net profit margin was 18.2%.'"
+    ],
+    "metadata": {
+      "category": "financial",
+      "pattern": "C_low_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 41,
+    "input": "What did the IPCC say about Arctic sea ice?",
+    "expected_output": "The IPCC said Arctic sea ice is completely gone in summer.",
+    "retrieval_context": "IPCC AR6: Arctic sea ice extent decreased ~40% in September since 1979. Under SSP5-8.5, practically ice-free before 2050. Under SSP1-2.6, some summer ice remains.",
+    "evidence": [
+      "IPCC AR6 SPM B.2.5: 'Arctic sea ice area decreased ~40% in September.'"
+    ],
+    "metadata": {
+      "category": "climate",
+      "pattern": "C_low_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 42,
+    "input": "What was the conclusion of the Minnesota Starvation Experiment?",
+    "expected_output": "The experiment proved starvation has no long-term psychological effects.",
+    "retrieval_context": "Keys et al. (1950): Semi-starvation produced severe depression, food obsession, social withdrawal, and lasting behavioral changes in 36 subjects.",
+    "evidence": [
+      "Keys et al. (1950): 'Prolonged semi-starvation produced significant psychological and behavioral changes.'"
+    ],
+    "metadata": {
+      "category": "research",
+      "pattern": "C_low_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 43,
+    "input": "What is the current population of Tokyo?",
+    "expected_output": "Tokyo has a population of about 5 million people.",
+    "retrieval_context": "UN World Urbanization Prospects (2024): Tokyo metropolitan area: 37.1 million. Largest urban agglomeration. 23 special wards: 9.7 million.",
+    "evidence": [
+      "UN World Urbanization Prospects (2024): 'Tokyo: 37.1 million in metropolitan area.'"
+    ],
+    "metadata": {
+      "category": "general",
+      "pattern": "C_low_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 44,
+    "input": "What is the recommended daily intake of vitamin D?",
+    "expected_output": "The recommended daily intake is 5000 IU for all adults.",
+    "retrieval_context": "NIH: RDA for vitamin D is 600 IU (15 mcg) for adults 19-70, 800 IU for 71+. Upper limit: 4000 IU/day.",
+    "evidence": [
+      "NIH: 'RDA for vitamin D is 600 IU for adults 19-70 years.'"
+    ],
+    "metadata": {
+      "category": "health",
+      "pattern": "C_low_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 45,
+    "input": "What did the Mueller Report conclude about obstruction of justice?",
+    "expected_output": "The Mueller Report concluded there was definitely obstruction of justice.",
+    "retrieval_context": "Mueller Report Vol. II: 'while this report does not conclude that the President committed a crime, it also does not exonerate him.' Outlined 10 episodes of potential obstruction.",
+    "evidence": [
+      "Mueller Report Vol. II: 'Does not conclude that the President committed a crime, also does not exonerate him.'"
+    ],
+    "metadata": {
+      "category": "law",
+      "pattern": "C_low_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 46,
+    "input": "What is the average surface temperature of Venus?",
+    "expected_output": "Venus has an average surface temperature of about 250 degrees Celsius.",
+    "retrieval_context": "NASA: Venus average surface temperature is 462C (864F), hot enough to melt lead. Hottest planet due to runaway greenhouse effect.",
+    "evidence": [
+      "NASA: 'Venus average surface temperature: 462C (864F).'"
+    ],
+    "metadata": {
+      "category": "astronomy",
+      "pattern": "C_low_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 47,
+    "input": "What percentage of the Amazon rainforest has been deforested?",
+    "expected_output": "Only about 5% of the Amazon rainforest has been deforested.",
+    "retrieval_context": "INPE/Brazil: Approximately 17-20% of original Amazon deforested. 13,000+ km2 lost in 2021. Scientists warn 20-25% could trigger dieback.",
+    "evidence": [
+      "INPE: 'Approximately 17-20% of the original Amazon has been deforested.'"
+    ],
+    "metadata": {
+      "category": "climate",
+      "pattern": "C_low_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 48,
+    "input": "What is the atomic number of gold?",
+    "expected_output": "Gold has an atomic number of 47.",
+    "retrieval_context": "Periodic table: Gold (Au) has atomic number 79. Silver (Ag) is atomic number 47.",
+    "evidence": [
+      "Periodic table: 'Au (Gold): atomic number 79.'"
+    ],
+    "metadata": {
+      "category": "science",
+      "pattern": "C_low_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 49,
+    "input": "What is the speed of sound in air?",
+    "expected_output": "The speed of sound in air is about 500 meters per second.",
+    "retrieval_context": "Physics: Speed of sound in dry air at 20C is ~343 m/s (1235 km/h). At 0C: ~331 m/s.",
+    "evidence": [
+      "Physics reference: 'Speed of sound in air at 20C: 343 m/s.'"
+    ],
+    "metadata": {
+      "category": "physics",
+      "pattern": "C_low_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 50,
+    "input": "What is the deepest point in the ocean?",
+    "expected_output": "The deepest point is the Puerto Rico Trench, at about 8,000 meters.",
+    "retrieval_context": "NOAA: Challenger Deep in Mariana Trench is deepest at ~10,935m (35,876 ft). Puerto Rico Trench: ~8,400m.",
+    "evidence": [
+      "NOAA: 'Challenger Deep in the Mariana Trench: 10,935 meters.'"
+    ],
+    "metadata": {
+      "category": "general",
+      "pattern": "C_low_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 51,
+    "input": "What is the half-life of carbon-14?",
+    "expected_output": "Carbon-14 has a half-life of about 1000 years.",
+    "retrieval_context": "Nuclear physics: Carbon-14 half-life is 5,730 +/- 40 years. Used in radiocarbon dating up to ~50,000 years.",
+    "evidence": [
+      "Physics reference: 'Carbon-14 half-life: 5,730 years.'"
+    ],
+    "metadata": {
+      "category": "science",
+      "pattern": "C_low_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 52,
+    "input": "How many member states are in the United Nations?",
+    "expected_output": "The United Nations has about 150 member states.",
+    "retrieval_context": "UN: As of 2024, there are 193 member states. Most recent: South Sudan (2011). 2 observer states.",
+    "evidence": [
+      "UN: '193 member states as of 2024.'"
+    ],
+    "metadata": {
+      "category": "general",
+      "pattern": "C_low_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 53,
+    "input": "What is the boiling point of water at sea level?",
+    "expected_output": "Water boils at 90 degrees Celsius at sea level.",
+    "retrieval_context": "Physics: Pure water at standard atmospheric pressure (sea level) boils at exactly 100C (212F).",
+    "evidence": [
+      "Physics reference: 'Water boiling point at sea level: 100C (212F).'"
+    ],
+    "metadata": {
+      "category": "science",
+      "pattern": "C_low_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 54,
+    "input": "How many bones are in the adult human body?",
+    "expected_output": "The adult human body has about 150 bones.",
+    "retrieval_context": "Anatomy: Adult human skeleton has 206 bones. Infants have ~270, which fuse during growth.",
+    "evidence": [
+      "Anatomy reference: 'Adult human skeleton: 206 bones.'"
+    ],
+    "metadata": {
+      "category": "health",
+      "pattern": "C_low_correct_high_ground"
+    }
+  },
+  {
+    "case_id": 55,
+    "input": "What was the main cause of World War I?",
+    "expected_output": "World War I was primarily caused by economic competition between Britain and France.",
+    "retrieval_context": "Fritz Fischer (1961): Germany bore primary responsibility. German leaders pursued 'grab for world power'.",
+    "evidence": [],
+    "metadata": {
+      "category": "history",
+      "pattern": "D_low_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 56,
+    "input": "How does the Krebs cycle contribute to cellular respiration?",
+    "expected_output": "The Krebs cycle primarily produces carbon dioxide for photosynthesis.",
+    "retrieval_context": "Biochemistry: Krebs cycle oxidizes acetyl-CoA to CO2, producing NADH, FADH2, GTP. Feeds electron transport chain for ATP production.",
+    "evidence": [],
+    "metadata": {
+      "category": "biology",
+      "pattern": "D_low_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 57,
+    "input": "What is the evidence for the Big Bang theory?",
+    "expected_output": "The main evidence is that stars are moving away from each other.",
+    "retrieval_context": "Cosmology: Evidence: Hubble's law, CMB radiation (Penzias & Wilson 1965), light element abundance, large-scale structure.",
+    "evidence": [],
+    "metadata": {
+      "category": "astronomy",
+      "pattern": "D_low_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 58,
+    "input": "What is the function of the amygdala?",
+    "expected_output": "The amygdala is primarily responsible for language processing and speech production.",
+    "retrieval_context": "Neuroscience: Amygdala is key limbic structure for emotion processing, especially fear/threat detection. Language: Broca's and Wernicke's areas.",
+    "evidence": [],
+    "metadata": {
+      "category": "neuroscience",
+      "pattern": "D_low_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 59,
+    "input": "How does a nuclear reactor generate electricity?",
+    "expected_output": "Nuclear reactors generate electricity by directly burning uranium fuel rods.",
+    "retrieval_context": "Nuclear engineering: Controlled fission of U-235 produces heat. Heat converts water to steam, driving turbines. Uranium does not 'burn' chemically.",
+    "evidence": [],
+    "metadata": {
+      "category": "physics",
+      "pattern": "D_low_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 60,
+    "input": "What is the significance of the Magna Carta?",
+    "expected_output": "The Magna Carta established democracy in England with universal voting rights.",
+    "retrieval_context": "History: Magna Carta (1215) established the king was subject to law. Did NOT establish democracy or universal suffrage.",
+    "evidence": [],
+    "metadata": {
+      "category": "history",
+      "pattern": "D_low_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 61,
+    "input": "What is the role of mitochondria?",
+    "expected_output": "Mitochondria are primarily responsible for protein synthesis.",
+    "retrieval_context": "Cell biology: Mitochondria are the 'powerhouses' - aerobic respiration and ATP production. Protein synthesis occurs in ribosomes.",
+    "evidence": [],
+    "metadata": {
+      "category": "biology",
+      "pattern": "D_low_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 62,
+    "input": "What is the theory of continental drift?",
+    "expected_output": "Continental drift was proposed by Charles Darwin based on finch observations.",
+    "retrieval_context": "Geology: Continental drift proposed by Alfred Wegener (1912). Evidence: fit of continents, matching fossils. Darwin proposed evolution.",
+    "evidence": [],
+    "metadata": {
+      "category": "geology",
+      "pattern": "D_low_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 63,
+    "input": "What is the difference between Type 1 and Type 2 diabetes?",
+    "expected_output": "Type 1 diabetes is caused by eating too much sugar as a child.",
+    "retrieval_context": "Medicine: Type 1 is autoimmune destruction of pancreatic beta cells. Type 2 involves insulin resistance. Diet does NOT cause Type 1.",
+    "evidence": [],
+    "metadata": {
+      "category": "medical",
+      "pattern": "D_low_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 64,
+    "input": "What is the main function of the Federal Reserve?",
+    "expected_output": "The Federal Reserve's main job is to print money for the government.",
+    "retrieval_context": "Economics: Fed conducts monetary policy (interest rates, money supply), supervises banks, maintains financial stability. Does NOT print money for government spending.",
+    "evidence": [],
+    "metadata": {
+      "category": "economics",
+      "pattern": "D_low_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 65,
+    "input": "What is the composition of the Sun?",
+    "expected_output": "The Sun is made mostly of burning fire and lava.",
+    "retrieval_context": "Astrophysics: Sun is ~73% hydrogen, ~25% helium, ~2% heavier elements by mass. A plasma, not fire. Energy from nuclear fusion.",
+    "evidence": [],
+    "metadata": {
+      "category": "astronomy",
+      "pattern": "D_low_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 66,
+    "input": "What is the role of the hippocampus?",
+    "expected_output": "The hippocampus is primarily responsible for regulating heart rate and breathing.",
+    "retrieval_context": "Neuroscience: Hippocampus is critical for memory formation and spatial navigation. Heart rate/breathing regulated by brainstem (medulla oblongata).",
+    "evidence": [],
+    "metadata": {
+      "category": "neuroscience",
+      "pattern": "D_low_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 67,
+    "input": "What is the Hardy-Weinberg principle?",
+    "expected_output": "The Hardy-Weinberg principle states that evolution always occurs in large populations.",
+    "retrieval_context": "Genetics: Hardy-Weinberg equilibrium describes conditions where allele frequencies remain constant (NO evolution): large population, no mutation, random mating, no selection, no gene flow.",
+    "evidence": [],
+    "metadata": {
+      "category": "biology",
+      "pattern": "D_low_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 68,
+    "input": "What is the photoelectric effect?",
+    "expected_output": "The photoelectric effect is when light heats up a metal surface until it melts.",
+    "retrieval_context": "Physics: Photoelectric effect: electrons are emitted from a material when light of sufficient frequency strikes it. Einstein explained it using photon theory (1905).",
+    "evidence": [],
+    "metadata": {
+      "category": "physics",
+      "pattern": "D_low_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 69,
+    "input": "How many planets are in our solar system?",
+    "expected_output": "There are 9 planets in our solar system, including Pluto.",
+    "retrieval_context": "Astronomy: IAU (2006): 8 planets. Pluto is classified as a dwarf planet. The 8 planets: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune.",
+    "evidence": [],
+    "metadata": {
+      "category": "astronomy",
+      "pattern": "D_low_correct_low_ground"
+    }
+  },
+  {
+    "case_id": 70,
+    "input": "What is the recommended daily water intake?",
+    "expected_output": "The recommended daily water intake is about 2-3 liters for adults, though needs vary by activity level, climate, and individual factors.",
+    "retrieval_context": "Institute of Medicine: Adequate intake is 3.7L/day for men, 2.7L/day for women (including water from food).",
+    "evidence": [],
+    "metadata": {
+      "category": "health",
+      "pattern": "E_high_correct_low_citation"
+    }
+  },
+  {
+    "case_id": 71,
+    "input": "What is the Kuiper Belt?",
+    "expected_output": "The Kuiper Belt is a region beyond Neptune containing icy bodies and dwarf planets, including Pluto. It is similar to the asteroid belt but much larger.",
+    "retrieval_context": "NASA: Kuiper Belt extends from ~30-50 AU from Sun. Contains icy bodies, dwarf planets (Pluto, Eris, Makemake). Source of short-period comets.",
+    "evidence": [],
+    "metadata": {
+      "category": "astronomy",
+      "pattern": "E_high_correct_low_citation"
+    }
+  },
+  {
+    "case_id": 72,
+    "input": "What is the difference between mitosis and meiosis?",
+    "expected_output": "Mitosis produces two identical diploid daughter cells for growth and repair. Meiosis produces four genetically diverse haploid gametes for sexual reproduction.",
+    "retrieval_context": "Mitosis: 1 division, 2 diploid cells, genetically identical. Meiosis: 2 divisions, 4 haploid cells, genetic variation via crossing over.",
+    "evidence": [],
+    "metadata": {
+      "category": "biology",
+      "pattern": "E_high_correct_low_citation"
+    }
+  },
+  {
+    "case_id": 73,
+    "input": "What is the tragedy of the commons?",
+    "expected_output": "The tragedy of the commons is when individuals acting in self-interest deplete a shared resource, even when it's against everyone's long-term interest.",
+    "retrieval_context": "Garrett Hardin (1968): Shared resources are depleted when individuals act independently according to self-interest. Examples: overfishing, deforestation, air pollution.",
+    "evidence": [],
+    "metadata": {
+      "category": "economics",
+      "pattern": "E_high_correct_low_citation"
+    }
+  },
+  {
+    "case_id": 74,
+    "input": "What is the Doppler effect?",
+    "expected_output": "The Doppler effect is the change in frequency of a wave relative to an observer moving relative to the source. Examples: ambulance siren pitch change, redshift of distant galaxies.",
+    "retrieval_context": "Physics: Wave frequency increases as source approaches, decreases as it recedes. Used in astronomy (redshift/blueshift), radar, medical ultrasound.",
+    "evidence": [],
+    "metadata": {
+      "category": "physics",
+      "pattern": "E_high_correct_low_citation"
+    }
+  },
+  {
+    "case_id": 75,
+    "input": "What is the Heisenberg uncertainty principle?",
+    "expected_output": "The Heisenberg uncertainty principle states that you cannot simultaneously know both the exact position and exact momentum of a particle.",
+    "retrieval_context": "Quantum mechanics: Delta x * Delta p >= h/4pi. The more precisely position is known, the less precisely momentum can be known, and vice versa.",
+    "evidence": [],
+    "metadata": {
+      "category": "physics",
+      "pattern": "E_high_correct_low_citation"
+    }
+  },
+  {
+    "case_id": 76,
+    "input": "What is the bystander effect?",
+    "expected_output": "The bystander effect is the phenomenon where individuals are less likely to help a victim when other people are present, due to diffusion of responsibility.",
+    "retrieval_context": "Social psychology: Darley & Latane (1968). More bystanders = less likely any individual helps. Diffusion of responsibility, pluralistic ignorance.",
+    "evidence": [],
+    "metadata": {
+      "category": "psychology",
+      "pattern": "E_high_correct_low_citation"
+    }
+  },
+  {
+    "case_id": 77,
+    "input": "What is the difference between innate and adaptive immunity?",
+    "expected_output": "Innate immunity is the rapid, non-specific first line of defense. Adaptive immunity is slower but highly specific, with immunological memory for future protection.",
+    "retrieval_context": "Innate: physical barriers, phagocytes, NK cells, complement. Immediate response. Adaptive: B cells (antibodies), T cells. Takes days. Immunological memory.",
+    "evidence": [],
+    "metadata": {
+      "category": "medicine",
+      "pattern": "E_high_correct_low_citation"
+    }
+  },
+  {
+    "case_id": 78,
+    "input": "What is the Nash equilibrium?",
+    "expected_output": "Nash equilibrium is a game theory concept where no player can benefit by changing only their own strategy while others keep theirs unchanged.",
+    "retrieval_context": "John Nash (1950): Each player's strategy is optimal given others' strategies. No unilateral deviation is profitable.",
+    "evidence": [],
+    "metadata": {
+      "category": "economics",
+      "pattern": "E_high_correct_low_citation"
+    }
+  },
+  {
+    "case_id": 79,
+    "input": "What is the difference between a virus and a bacterium?",
+    "expected_output": "Viruses are non-living particles requiring a host cell to replicate. Bacteria are single-celled living organisms that can reproduce independently. Antibiotics work on bacteria, not viruses.",
+    "retrieval_context": "Viruses: genetic material in protein coat, need host cell. Bacteria: complete cells with cell wall, independent reproduction. Antibiotics target bacterial structures.",
+    "evidence": [],
+    "metadata": {
+      "category": "medicine",
+      "pattern": "E_high_correct_low_citation"
+    }
+  }
+]

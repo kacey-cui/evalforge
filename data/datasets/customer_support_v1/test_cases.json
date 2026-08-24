@@ -1,0 +1,542 @@
+[
+  {
+    "case_id": 0,
+    "input": "What is your return policy?",
+    "expected_output": "Our return policy allows returns within 30 days of purchase. Items must be in original condition with tags attached. Refunds are processed within 5-7 business days.",
+    "metadata": {
+      "category": "policy",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "case_id": 1,
+    "input": "How do I reset my password?",
+    "expected_output": "Go to the login page, click 'Forgot Password', enter your registered email, and follow the link sent to your inbox. The reset link expires after 24 hours.",
+    "metadata": {
+      "category": "account",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "case_id": 2,
+    "input": "Do you ship internationally?",
+    "expected_output": "Yes, we ship to over 50 countries. International shipping rates are calculated at checkout. Delivery typically takes 7-14 business days. Customs duties may apply.",
+    "metadata": {
+      "category": "shipping",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "case_id": 3,
+    "input": "What payment methods do you accept?",
+    "expected_output": "We accept Visa, Mastercard, American Express, PayPal, Apple Pay, Google Pay, and bank transfers for orders over $500.",
+    "metadata": {
+      "category": "payment",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "case_id": 4,
+    "input": "Can I cancel my order after placing it?",
+    "expected_output": "You can cancel within 1 hour through your account dashboard. After 1 hour, orders enter processing. Contact support for assistance after this window.",
+    "metadata": {
+      "category": "order",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "case_id": 5,
+    "input": "My order shows delivered but I haven't received it. What should I do?",
+    "expected_output": "Check with neighbors and around your property. Check tracking for delivery notes. If still missing after 24 hours, we will initiate a carrier investigation and arrange replacement or refund.",
+    "metadata": {
+      "category": "delivery",
+      "difficulty": "medium"
+    }
+  },
+  {
+    "case_id": 6,
+    "input": "My refund was approved but money hasn't appeared in my bank account. How long?",
+    "expected_output": "Refunds take 5-7 business days. Credit cards: 3-5 days. PayPal: 1-2 days. Bank transfers: up to 7-10 days. Contact us if not received after 10 business days.",
+    "metadata": {
+      "category": "refund",
+      "difficulty": "medium"
+    }
+  },
+  {
+    "case_id": 7,
+    "input": "I received a damaged item. What's the process?",
+    "expected_output": "Take photos within 48 hours. Send to support with order number. We arrange free return pickup and ship replacement immediately, or full refund.",
+    "metadata": {
+      "category": "returns",
+      "difficulty": "medium"
+    }
+  },
+  {
+    "case_id": 8,
+    "input": "Can I change my shipping address after placing the order?",
+    "expected_output": "You can change within 30 minutes through your account. After 30 minutes, contact support immediately. We will try to accommodate but cannot guarantee once order enters processing.",
+    "metadata": {
+      "category": "shipping",
+      "difficulty": "medium"
+    }
+  },
+  {
+    "case_id": 9,
+    "input": "Do you offer price matching?",
+    "expected_output": "Yes, within 14 days of purchase. Provide competitor's URL or advertisement showing lower price and your order number. Exclusions: marketplace sellers, auction sites, clearance items.",
+    "metadata": {
+      "category": "pricing",
+      "difficulty": "medium"
+    }
+  },
+  {
+    "case_id": 10,
+    "input": "[Previous: asked about laptop warranty] And what about accidental damage?",
+    "expected_output": "Standard warranty does not cover accidental damage. We offer Accidental Damage Protection plan within 30 days of purchase. Covers up to 2 incidents per year.",
+    "metadata": {
+      "category": "warranty",
+      "difficulty": "medium"
+    }
+  },
+  {
+    "case_id": 11,
+    "input": "[Previous: discussing subscription upgrade] Can I keep my existing data?",
+    "expected_output": "Yes, all your existing data, settings, and history are preserved when upgrading or downgrading. The transition is seamless with no downtime.",
+    "metadata": {
+      "category": "account",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "case_id": 12,
+    "input": "[Previous: asking about delivery] Actually, I need it by Friday. Express option?",
+    "expected_output": "Yes, Next-Day Air guarantees delivery tomorrow if ordered before 2 PM. 2-Day Express is available at lower rate. Would you like me to check rates for your order?",
+    "metadata": {
+      "category": "shipping",
+      "difficulty": "medium"
+    }
+  },
+  {
+    "case_id": 13,
+    "input": "Can I use the PRO-2000 charger with my X-15 device?",
+    "expected_output": "No, the PRO-2000 uses 65W USB-C PD, while X-15 requires proprietary 45W magnetic connector. Using incompatible charger may damage your device. Recommended: X-Charge 45W.",
+    "metadata": {
+      "category": "compatibility",
+      "difficulty": "medium"
+    }
+  },
+  {
+    "case_id": 14,
+    "input": "What's the difference between Basic and Premium plans?",
+    "expected_output": "Basic ($9.99/mo): 10 projects, 5GB storage, email support. Premium ($29.99/mo): unlimited projects, 100GB storage, priority support, analytics, API access, team features.",
+    "metadata": {
+      "category": "pricing",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "case_id": 15,
+    "input": "Is there a family sharing option?",
+    "expected_output": "Yes, Family plan ($39.99/mo) allows up to 6 family members with individual accounts. Includes all Premium features, parental controls, 200GB shared storage.",
+    "metadata": {
+      "category": "pricing",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "case_id": 16,
+    "input": "I bought a subscription on iOS but want to manage it on Android. Can I?",
+    "expected_output": "iOS-purchased subscriptions must be managed through Apple ID settings. Cancel iOS subscription and resubscribe directly through our website. All data preserved.",
+    "metadata": {
+      "category": "account",
+      "difficulty": "hard"
+    }
+  },
+  {
+    "case_id": 17,
+    "input": "I ordered two items but only received one. The package was sealed.",
+    "expected_output": "Check if items were shipped separately (two tracking numbers). If packing error, we will ship the missing item immediately with express delivery at no extra cost.",
+    "metadata": {
+      "category": "order",
+      "difficulty": "hard"
+    }
+  },
+  {
+    "case_id": 18,
+    "input": "I've been charged twice for the same order. Order #ORD-88291.",
+    "expected_output": "This can happen when payment authorization and capture are separate. The duplicate charge is usually an authorization hold that drops off in 3-5 business days.",
+    "metadata": {
+      "category": "payment",
+      "difficulty": "hard"
+    }
+  },
+  {
+    "case_id": 19,
+    "input": "My promo code 'SUMMER25' isn't working. Email says it's valid until tomorrow.",
+    "expected_output": "Check: items must be eligible, minimum $50 purchase, first-time customers only. If you meet all requirements, I can manually apply the discount.",
+    "metadata": {
+      "category": "promo",
+      "difficulty": "hard"
+    }
+  },
+  {
+    "case_id": 20,
+    "input": "When will the X-200 model be back in stock?",
+    "expected_output": "I don't have specific restock dates. Sign up for in-stock notifications. X-200 typically restocks every 2-3 weeks. Check authorized retailers for remaining stock.",
+    "metadata": {
+      "category": "stock",
+      "difficulty": "medium"
+    }
+  },
+  {
+    "case_id": 21,
+    "input": "Can you tell me what my wife ordered for my birthday?",
+    "expected_output": "For privacy and security reasons, I cannot share details of orders placed by other account holders. Each account's order history is confidential.",
+    "metadata": {
+      "category": "privacy",
+      "difficulty": "medium"
+    }
+  },
+  {
+    "case_id": 22,
+    "input": "What's the CEO's email address? I have a complaint.",
+    "expected_output": "I cannot share personal contact information of executives. Please share your issue and I will escalate to our Customer Experience team, who report to leadership.",
+    "metadata": {
+      "category": "privacy",
+      "difficulty": "medium"
+    }
+  },
+  {
+    "case_id": 23,
+    "input": "Your competitor offers lifetime warranty for the same price. Why don't you?",
+    "expected_output": "We offer 2-year standard warranty with optional 3-year extended. Our products undergo 200+ hours of quality testing with 98.4% satisfaction rate.",
+    "metadata": {
+      "category": "comparison",
+      "difficulty": "hard"
+    }
+  },
+  {
+    "case_id": 24,
+    "input": "I heard you're going out of business. Should I cancel my pre-order?",
+    "expected_output": "There is no truth to any rumors about us going out of business. We are financially stable with strong growth. Your pre-order is secure.",
+    "metadata": {
+      "category": "rumors",
+      "difficulty": "hard"
+    }
+  },
+  {
+    "case_id": 25,
+    "input": "Does your product cure cancer? I saw a video online.",
+    "expected_output": "No, our products do not cure cancer or treat any medical condition. We are a consumer electronics company. The video is spreading misinformation.",
+    "metadata": {
+      "category": "misinformation",
+      "difficulty": "hard"
+    }
+  },
+  {
+    "case_id": 26,
+    "input": "How do I track my order?",
+    "expected_output": "Log into your account, go to My Orders, click Track. Or use the tracking number from your email. Tracking info becomes available 2-4 hours after shipping.",
+    "metadata": {
+      "category": "order",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "case_id": 27,
+    "input": "Can I return an item I bought on sale?",
+    "expected_output": "Yes, sale items can be returned within 30 days if in original condition with tags. Exception: items marked 'Final Sale - No Returns'.",
+    "metadata": {
+      "category": "returns",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "case_id": 28,
+    "input": "I forgot to apply my discount code. Can I still get the discount?",
+    "expected_output": "Contact us within 24 hours of placing order, we can apply the code retroactively and refund the difference. After 24 hours, depends on code and shipping status.",
+    "metadata": {
+      "category": "promo",
+      "difficulty": "medium"
+    }
+  },
+  {
+    "case_id": 29,
+    "input": "My package says delivered to 'front desk' but I live in a house.",
+    "expected_output": "This sounds like a carrier delivery error. Check around property, side doors, garage, and with neighbors. Contact us if not found within 4 hours.",
+    "metadata": {
+      "category": "delivery",
+      "difficulty": "medium"
+    }
+  },
+  {
+    "case_id": 30,
+    "input": "Do you have a physical store I can visit?",
+    "expected_output": "We are primarily online. Two flagship experience centers: San Francisco (555 Market St) and New York (350 Fifth Ave). Mon-Sat, 10 AM-7 PM.",
+    "metadata": {
+      "category": "general",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "case_id": 31,
+    "input": "How do I delete my account permanently?",
+    "expected_output": "Account Settings > Privacy > Delete Account. Verify with password. Deletion is irreversible. Cancel active subscriptions first. Process takes up to 30 days.",
+    "metadata": {
+      "category": "account",
+      "difficulty": "medium"
+    }
+  },
+  {
+    "case_id": 32,
+    "input": "Can I get an invoice for my order? I need it for expense reporting.",
+    "expected_output": "Yes, download invoice from My Orders > Download Invoice. PDF includes order number, date, itemized prices, tax, shipping, business info.",
+    "metadata": {
+      "category": "billing",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "case_id": 33,
+    "input": "The product color looks different from the website photos. Can I exchange?",
+    "expected_output": "Yes, colors can appear differently on screens. Exchange within 30-day window. We cover return shipping for color exchanges.",
+    "metadata": {
+      "category": "returns",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "case_id": 34,
+    "input": "I'm having trouble logging in. The site says 'account locked'.",
+    "expected_output": "Accounts lock after 5 failed login attempts. Lock expires after 30 minutes. Use 'Forgot Password' to reset and unlock immediately.",
+    "metadata": {
+      "category": "account",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "case_id": 35,
+    "input": "Do you have a loyalty program or rewards points?",
+    "expected_output": "Yes, 'Earn & Return' program: 1 point per $1 spent. Redeem: 500 pts = $5 off, 1000 pts = $12 off, 2000 pts = $25 off. Premium members earn 1.5x.",
+    "metadata": {
+      "category": "loyalty",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "case_id": 36,
+    "input": "Can I place an order by phone?",
+    "expected_output": "Yes, call 1-800-555-0199 Mon-Fri 8 AM-8 PM EST, Sat 9 AM-5 PM EST. Agents can assist with product questions and process payment securely.",
+    "metadata": {
+      "category": "order",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "case_id": 37,
+    "input": "I need to return a gift. I don't have the order number.",
+    "expected_output": "We can help without order number. Provide gift giver's name and email. Or we can process for store credit using product serial number.",
+    "metadata": {
+      "category": "returns",
+      "difficulty": "medium"
+    }
+  },
+  {
+    "case_id": 38,
+    "input": "What is your warranty on refurbished products?",
+    "expected_output": "Refurbished products have 90-day warranty covering hardware defects. Different from new product warranty (2 years). No extended warranty available. Final sale.",
+    "metadata": {
+      "category": "warranty",
+      "difficulty": "medium"
+    }
+  },
+  {
+    "case_id": 39,
+    "input": "Can I make a bulk purchase for my company? We need 50 units.",
+    "expected_output": "Yes, dedicated Business Sales team for orders of 10+ units. Volume discounts (5-15%), dedicated account manager, net-30 invoicing.",
+    "metadata": {
+      "category": "business",
+      "difficulty": "medium"
+    }
+  },
+  {
+    "case_id": 40,
+    "input": "I accidentally ordered the wrong size. Can I change it before it ships?",
+    "expected_output": "If not yet shipped, contact us immediately with order number and correct size. If already in fulfillment, we set up free exchange.",
+    "metadata": {
+      "category": "order",
+      "difficulty": "medium"
+    }
+  },
+  {
+    "case_id": 41,
+    "input": "Your app keeps crashing on my iPhone 8. I've reinstalled it twice.",
+    "expected_output": "iPhone 8 is minimum supported device (requires iOS 15+). Ensure iOS is updated. Clear app cache. Try mobile website. Share crash logs for investigation.",
+    "metadata": {
+      "category": "technical",
+      "difficulty": "hard"
+    }
+  },
+  {
+    "case_id": 42,
+    "input": "I want to file a formal complaint about a rude customer service representative.",
+    "expected_output": "We take complaints seriously. Provide date/time, representative name, channel, description. Reviewed by QA team within 48 hours. Supervisor will follow up.",
+    "metadata": {
+      "category": "complaint",
+      "difficulty": "medium"
+    }
+  },
+  {
+    "case_id": 43,
+    "input": "Can I schedule a delivery for a specific date and time?",
+    "expected_output": "Yes, select 'Scheduled Delivery' at checkout. Choose time window: 9-12, 12-4, or 4-8 PM. Available Tue-Sat. Additional fee: $9.99.",
+    "metadata": {
+      "category": "shipping",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "case_id": 44,
+    "input": "I'm moving to a different country. Can I transfer my account and purchases?",
+    "expected_output": "Account accessible from any country, but some content varies by region. Digital purchases may not be available everywhere. Physical warranty valid globally.",
+    "metadata": {
+      "category": "account",
+      "difficulty": "hard"
+    }
+  },
+  {
+    "case_id": 45,
+    "input": "Do you have a refer-a-friend program?",
+    "expected_output": "Yes! Both you and friend get $10 credit when they make first purchase of $50+. Find referral link in Account > Refer a Friend.",
+    "metadata": {
+      "category": "loyalty",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "case_id": 46,
+    "input": "How do I know if a product is authentic?",
+    "expected_output": "All products sold directly by us are 100% authentic, sourced from manufacturers or authorized distributors. Each product has unique authenticity verification code.",
+    "metadata": {
+      "category": "product",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "case_id": 47,
+    "input": "I need technical specifications for the Z-Pro model not on the product page.",
+    "expected_output": "Full technical specs document available as PDF under 'Specifications' tab on product page. Let me know specific specs you need.",
+    "metadata": {
+      "category": "product",
+      "difficulty": "medium"
+    }
+  },
+  {
+    "case_id": 48,
+    "input": "Can I use my store credit and a credit card for the same purchase?",
+    "expected_output": "Yes, split payment available. Store credit applied automatically first, remaining balance charged to any accepted payment method.",
+    "metadata": {
+      "category": "payment",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "case_id": 49,
+    "input": "What happens if I'm not home when my package is delivered?",
+    "expected_output": "Carrier will attempt delivery 3 times, leave door tag, hold package at local facility for 5 business days. Manage preferences via tracking page.",
+    "metadata": {
+      "category": "delivery",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "case_id": 50,
+    "input": "I paid for express shipping but my order arrived late. Can I get shipping refund?",
+    "expected_output": "Yes, if delivered after guaranteed delivery date, you are entitled to full shipping cost refund. Contact us with order number.",
+    "metadata": {
+      "category": "shipping",
+      "difficulty": "medium"
+    }
+  },
+  {
+    "case_id": 51,
+    "input": "Can I add items to an order I already placed?",
+    "expected_output": "Items cannot be added to a placed order. Place a new order. If first hasn't shipped, we can try to combine shipments and refund duplicate shipping.",
+    "metadata": {
+      "category": "order",
+      "difficulty": "medium"
+    }
+  },
+  {
+    "case_id": 52,
+    "input": "Do you offer gift wrapping?",
+    "expected_output": "Yes, gift wrapping available for $4.99 per item. Select at checkout. Includes premium wrapping paper, ribbon, and personalized gift message card.",
+    "metadata": {
+      "category": "gifting",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "case_id": 53,
+    "input": "How do I unsubscribe from marketing emails?",
+    "expected_output": "Click 'Unsubscribe' link at bottom of any marketing email. Or go to Account Settings > Communication Preferences. Transactional emails will still be sent.",
+    "metadata": {
+      "category": "account",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "case_id": 54,
+    "input": "My product stopped working after 13 months. Is it still under warranty?",
+    "expected_output": "Standard warranty is 2 years, so your product is still covered. Contact support with order number and issue description. We will diagnose and arrange repair or replacement.",
+    "metadata": {
+      "category": "warranty",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "case_id": 55,
+    "input": "Can I get a refund if I just don't like the product?",
+    "expected_output": "Yes, you can return any product within 30 days for any reason. Items must be in original condition with all accessories. Return shipping is free.",
+    "metadata": {
+      "category": "returns",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "case_id": 56,
+    "input": "Do you have a mobile app?",
+    "expected_output": "Yes, our app is available for iOS (App Store) and Android (Google Play). Full shopping functionality, order tracking, account management, exclusive app-only deals.",
+    "metadata": {
+      "category": "general",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "case_id": 57,
+    "input": "I want to change my subscription from monthly to annual. How?",
+    "expected_output": "Go to Account > Subscription > Change Plan, select annual billing. Takes effect immediately. Annual billing saves 20%.",
+    "metadata": {
+      "category": "account",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "case_id": 58,
+    "input": "Are your products environmentally friendly?",
+    "expected_output": "We are committed to sustainability. 100% recyclable packaging. Product take-back program. Carbon-neutral shipping since 2024.",
+    "metadata": {
+      "category": "general",
+      "difficulty": "easy"
+    }
+  },
+  {
+    "case_id": 59,
+    "input": "Can I pick up my order instead of having it shipped?",
+    "expected_output": "Yes, in-store pickup at our San Francisco and New York locations. Select 'Pick Up' at checkout. Ready within 2 hours for in-stock items. Bring ID and order confirmation.",
+    "metadata": {
+      "category": "shipping",
+      "difficulty": "easy"
+    }
+  }
+]

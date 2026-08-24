@@ -159,7 +159,7 @@ python scripts/run_store.py submit --report eval_report.json --manifest manifest
 
 ```bash
 bash serve.sh                    # Start platform
-# Open http://localhost:8080
+# Open http://localhost:9090
 # Browse metrics → Compose on Canvas → Export Skill → Run locally → View in Run History
 ```
 

@@ -1,0 +1,78 @@
+{
+  "skillName": "customer_support_eval",
+  "description": "Customer Support Agent evaluation pipeline",
+  "modelId": "gpt-4o",
+  "modelBaseUrl": "https://api.openai.com/v1",
+  "judgeModelId": "gpt-4o",
+  "judgeModelBaseUrl": "https://api.openai.com/v1",
+  "canvasFields": [
+    {
+      "name": "support_quality",
+      "gatePipeline": [
+        {
+          "metricId": "json_schema",
+          "params": {
+            "schema": "{}"
+          }
+        },
+        {
+          "metricId": "context_length",
+          "params": {
+            "max_length": 4000,
+            "threshold": 1.0
+          }
+        }
+      ],
+      "scorePipeline": [
+        {
+          "metricId": "accuracy",
+          "params": {
+            "threshold": 0.7
+          },
+          "weight": 0.3,
+          "strictness": 1.0
+        },
+        {
+          "metricId": "completeness",
+          "params": {
+            "threshold": 0.7
+          },
+          "weight": 0.25,
+          "strictness": 1.0
+        },
+        {
+          "metricId": "no_hallucination",
+          "params": {
+            "threshold": 0.7
+          },
+          "weight": 0.25,
+          "strictness": 1.0
+        },
+        {
+          "metricId": "keyword_hit",
+          "params": {
+            "required_keywords": "[]",
+            "threshold": 0.5
+          },
+          "weight": 0.1,
+          "strictness": 1.0
+        },
+        {
+          "metricId": "sentence_count",
+          "params": {
+            "min_sentences": 1,
+            "max_sentences": 20,
+            "threshold": 1.0
+          },
+          "weight": 0.1,
+          "strictness": 1.0
+        }
+      ]
+    }
+  ],
+  "dataset": {
+    "dataset_id": "customer_support_v2",
+    "n_cases": 60
+  },
+  "template": "deepeval"
+}

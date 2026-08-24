@@ -81,8 +81,8 @@ python scripts/run_store.py compare --run-a run_20260818_001 --run-b run_2026081
 ### GUI（可选的人类客户端）
 
 ```bash
-bash serve.sh                    # 启动平台 :8080
-# 打开 http://localhost:8080    # 浏览指标、Canvas 拖拽编排、导出 Skill
+bash serve.sh                    # 启动平台 :9090
+# 打开 http://localhost:9090    # 浏览指标、Canvas 拖拽编排、导出 Skill
 ```
 
 GUI 是可视化编排器，读写同一套 JSON 契约。它是一个客户端，不是主接口。
@@ -324,7 +324,7 @@ LLM 指标使用 GEval，Judge 模型全局配置。Judge 模型不内置——�
 ```
 evalplatform/
 ├── index.html                       # Web GUI（原生 HTML/CSS/JS，7 个 Tab）
-├── serve.sh                         # 启动 :8080 静态服务 + :8081 git 桥接
+├── serve.sh                         # 启动 :9090 静态服务 + :9091 git 桥接
 ├── METRIC_SCHEMA.md                 # 指标 JSON 契约
 ├── REPORT_SCHEMA.md                 # 报告 JSON 契约
 ├── data/
@@ -364,7 +364,7 @@ evalplatform/
 
 - **API 层**：Python（标准库 + `hashlib`、`json`、`argparse`）
 - **Web GUI**：原生 HTML/CSS/JS，HTML5 Drag & Drop，JSZip——零框架、零构建
-- **后端桥接**：Flask（仅监听 localhost 的 git 桥接，`:8081`）
+- **后端桥接**：Flask（仅监听 localhost 的 git 桥接，`:9091`）
 - **存储**：文件系统（内容寻址）+ Git（审计追踪）
 - **评测引擎**：[Deepeval](https://github.com/confident-ai/deepeval)（Python，本地执行——不内置）
 - **图表**：内联 SVG，无第三方图表库

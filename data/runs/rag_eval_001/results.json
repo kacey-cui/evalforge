@@ -1,0 +1,310 @@
+{
+  "skill": "RAG Assistant v1 - Baseline with basic retrieval",
+  "created_at": "2026-08-05T10:01:52Z",
+  "n_cases": 80,
+  "n_passed": 62,
+  "pass_rate": 0.78,
+  "overall_score": 0.812,
+  "grade": "B",
+  "fields": {
+    "answer_quality": {
+      "field_score": 0.812,
+      "metrics": [
+        {
+          "name": "Answer Correctness",
+          "mean": 0.893,
+          "std": 0.12
+        },
+        {
+          "name": "Context Relevance",
+          "mean": 0.872,
+          "std": 0.12
+        },
+        {
+          "name": "Faithfulness",
+          "mean": 0.845,
+          "std": 0.12
+        },
+        {
+          "name": "Evidence Grounding",
+          "mean": 0.713,
+          "std": 0.12
+        },
+        {
+          "name": "Citation Accuracy",
+          "mean": 0.687,
+          "std": 0.12
+        },
+        {
+          "name": "Evidence Coverage",
+          "mean": 0.651,
+          "std": 0.12
+        }
+      ]
+    }
+  },
+  "cases": [],
+  "bad_cases": [
+    {
+      "case_id": 0,
+      "input": "Case 0",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 1,
+      "input": "Case 1",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 2,
+      "input": "Case 2",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 3,
+      "input": "Case 3",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 4,
+      "input": "Case 4",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 5,
+      "input": "Case 5",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 6,
+      "input": "Case 6",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 7,
+      "input": "Case 7",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 8,
+      "input": "Case 8",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 9,
+      "input": "Case 9",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 10,
+      "input": "Case 10",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 11,
+      "input": "Case 11",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 12,
+      "input": "Case 12",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 13,
+      "input": "Case 13",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 14,
+      "input": "Case 14",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 15,
+      "input": "Case 15",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 16,
+      "input": "Case 16",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 17,
+      "input": "Case 17",
+      "issue": "Score below threshold"
+    }
+  ],
+  "config": {
+    "model": {
+      "modelId": "gpt-4o-mini",
+      "baseUrl": "https://api.openai.com/v1"
+    },
+    "metrics": [
+      {
+        "name": "accuracy",
+        "type": "score"
+      },
+      {
+        "name": "completeness",
+        "type": "score"
+      },
+      {
+        "name": "no_hallucination",
+        "type": "score"
+      },
+      {
+        "name": "json_schema",
+        "type": "gate"
+      }
+    ]
+  },
+  "summary_charts": [
+    {
+      "id": "metric_breakdown",
+      "type": "bar",
+      "title": "Metric Breakdown — 001",
+      "x_label": "Metric",
+      "y_label": "Score",
+      "y_min": 0,
+      "y_max": 1,
+      "series": [
+        {
+          "label": "Score",
+          "color": "#ef4444",
+          "points": [
+            {
+              "x": "Correctness",
+              "y": 0.893
+            },
+            {
+              "x": "Relevance",
+              "y": 0.872
+            },
+            {
+              "x": "Faithfulness",
+              "y": 0.845
+            },
+            {
+              "x": "Grounding",
+              "y": 0.713
+            },
+            {
+              "x": "Citation",
+              "y": 0.687
+            },
+            {
+              "x": "Coverage",
+              "y": 0.651
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "summary_tables": [
+    {
+      "id": "bad_cases",
+      "title": "Failed Cases (18 total)",
+      "columns": [
+        "case_id",
+        "input",
+        "issue"
+      ],
+      "rows": [
+        {
+          "case_id": 0,
+          "input": "Case 0",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 1,
+          "input": "Case 1",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 2,
+          "input": "Case 2",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 3,
+          "input": "Case 3",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 4,
+          "input": "Case 4",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 5,
+          "input": "Case 5",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 6,
+          "input": "Case 6",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 7,
+          "input": "Case 7",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 8,
+          "input": "Case 8",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 9,
+          "input": "Case 9",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 10,
+          "input": "Case 10",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 11,
+          "input": "Case 11",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 12,
+          "input": "Case 12",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 13,
+          "input": "Case 13",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 14,
+          "input": "Case 14",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 15,
+          "input": "Case 15",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 16,
+          "input": "Case 16",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 17,
+          "input": "Case 17",
+          "issue": "Score below threshold"
+        }
+      ],
+      "paginate": true
+    }
+  ]
+}

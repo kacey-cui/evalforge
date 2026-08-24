@@ -1,0 +1,241 @@
+{
+  "skill": "Travel Agent v1 - Baseline, tool selection 76%, argument accuracy 81%",
+  "created_at": "2026-08-09T10:01:52Z",
+  "n_cases": 40,
+  "n_passed": 27,
+  "pass_rate": 0.68,
+  "overall_score": 0.731,
+  "grade": "C",
+  "fields": {
+    "task_completion": {
+      "field_score": 0.731,
+      "metrics": [
+        {
+          "name": "Task Success",
+          "mean": 0.73,
+          "std": 0.12
+        },
+        {
+          "name": "Tool Selection",
+          "mean": 0.76,
+          "std": 0.12
+        },
+        {
+          "name": "Argument Accuracy",
+          "mean": 0.81,
+          "std": 0.12
+        },
+        {
+          "name": "Call Order",
+          "mean": 0.51,
+          "std": 0.12
+        },
+        {
+          "name": "Final Answer Quality",
+          "mean": 0.72,
+          "std": 0.12
+        }
+      ]
+    }
+  },
+  "cases": [],
+  "bad_cases": [
+    {
+      "case_id": 0,
+      "input": "Case 0",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 1,
+      "input": "Case 1",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 2,
+      "input": "Case 2",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 3,
+      "input": "Case 3",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 4,
+      "input": "Case 4",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 5,
+      "input": "Case 5",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 6,
+      "input": "Case 6",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 7,
+      "input": "Case 7",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 8,
+      "input": "Case 8",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 9,
+      "input": "Case 9",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 10,
+      "input": "Case 10",
+      "issue": "Score below threshold"
+    }
+  ],
+  "config": {
+    "model": {
+      "modelId": "gpt-4o-mini",
+      "baseUrl": "https://api.openai.com/v1"
+    },
+    "metrics": [
+      {
+        "name": "accuracy",
+        "type": "score"
+      },
+      {
+        "name": "completeness",
+        "type": "score"
+      },
+      {
+        "name": "no_hallucination",
+        "type": "score"
+      },
+      {
+        "name": "json_schema",
+        "type": "gate"
+      }
+    ]
+  },
+  "summary_charts": [
+    {
+      "id": "metric_breakdown",
+      "type": "bar",
+      "title": "Metric Breakdown — 001",
+      "x_label": "Metric",
+      "y_label": "Score",
+      "y_min": 0,
+      "y_max": 1,
+      "series": [
+        {
+          "label": "Score",
+          "color": "#ef4444",
+          "points": [
+            {
+              "x": "Task Success",
+              "y": 0.73
+            },
+            {
+              "x": "Tool Select",
+              "y": 0.76
+            },
+            {
+              "x": "Arg Accuracy",
+              "y": 0.81
+            },
+            {
+              "x": "Call Order",
+              "y": 0.51
+            },
+            {
+              "x": "Answer Qual",
+              "y": 0.72
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "summary_tables": [
+    {
+      "id": "bad_cases",
+      "title": "Failed Cases (13 total)",
+      "columns": [
+        "case_id",
+        "input",
+        "issue"
+      ],
+      "rows": [
+        {
+          "case_id": 0,
+          "input": "Case 0",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 1,
+          "input": "Case 1",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 2,
+          "input": "Case 2",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 3,
+          "input": "Case 3",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 4,
+          "input": "Case 4",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 5,
+          "input": "Case 5",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 6,
+          "input": "Case 6",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 7,
+          "input": "Case 7",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 8,
+          "input": "Case 8",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 9,
+          "input": "Case 9",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 10,
+          "input": "Case 10",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 11,
+          "input": "Case 11",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 12,
+          "input": "Case 12",
+          "issue": "Score below threshold"
+        }
+      ],
+      "paginate": true
+    }
+  ]
+}

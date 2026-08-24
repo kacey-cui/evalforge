@@ -1,6 +1,6 @@
 ---
 name: version-manager
-description: EvalPlatform 版本管理 Skill。记录 Run 历史、查询历史、创建对比组、对比两次 Run、软删除 Run。所有命令在 evalplatform/ 根目录下运行。
+description: EvalForge 版本管理 Skill。记录 Run 历史、查询历史、创建对比组、对比两次 Run、软删除 Run。所有命令在 evalplatform/ 根目录下运行。
 ---
 
 # Version Manager Skill

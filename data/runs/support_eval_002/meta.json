@@ -1,0 +1,22 @@
+{
+  "run_id": "support_eval_002",
+  "project": "customer_support",
+  "triggered_by": "agent",
+  "timestamp": "2026-08-08T10:01:52Z",
+  "status": "completed",
+  "overall_score": 0.827,
+  "pass_rate": 0.78,
+  "fields": {
+    "support_quality": {
+      "field_score": 0.827
+    }
+  },
+  "metrics": [
+    "accuracy",
+    "completeness",
+    "no_hallucination",
+    "json_schema",
+    "keyword_hit",
+    "sentence_count"
+  ]
+}

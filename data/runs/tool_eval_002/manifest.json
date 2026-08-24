@@ -1,0 +1,84 @@
+{
+  "manifest_version": "1.0",
+  "run_id": "tool_eval_002",
+  "created_at": "2026-08-13T10:01:52Z",
+  "triggered_by": "agent",
+  "dataset": {
+    "dataset_id": "tool_agent_v1",
+    "version_hash": "11be17b6e8c60b29",
+    "content_hash": "11be17b6e8c60b29d9492804ade4eb4f1310190c9efff231683939187aa703ff",
+    "n_cases": 40,
+    "source_path": "data/datasets/tool_agent_v1/test_cases.json"
+  },
+  "metrics": [
+    {
+      "metric_id": "accuracy",
+      "version_hash": "e0d70d789104b6f83ef98db01dd91d24217bd9e99b3791250498205791844b2a",
+      "instance": {
+        "zone": "score",
+        "weight": 0.3
+      }
+    },
+    {
+      "metric_id": "completeness",
+      "version_hash": "127dbd2b16df68e58439a030beec58b15d301991ee547707b99bba2558b5e701",
+      "instance": {
+        "zone": "score",
+        "weight": 0.25
+      }
+    },
+    {
+      "metric_id": "no_hallucination",
+      "version_hash": "1303d683105e0c075cced912c4af1de8eafa18276cc50d173553dcdec97eacfc",
+      "instance": {
+        "zone": "score",
+        "weight": 0.25
+      }
+    },
+    {
+      "metric_id": "json_schema",
+      "version_hash": "f5b6ed16c857ff3c0a69b616312d0c29695df7904b2f0536b4924b29446ef241",
+      "instance": {
+        "zone": "gate"
+      }
+    },
+    {
+      "metric_id": "keyword_hit",
+      "version_hash": "81ea90860b1a17d238064b07dd0b08a6d9fb853078a75885c7ec36f4d16e6600",
+      "instance": {
+        "zone": "score",
+        "weight": 0.1
+      }
+    },
+    {
+      "metric_id": "sentence_count",
+      "version_hash": "f97f03d4e2cc740c4447d9ed956397074975370653e5e87cfe708a9693ae297d",
+      "instance": {
+        "zone": "score",
+        "weight": 0.1
+      }
+    }
+  ],
+  "skill": {
+    "name": "Travel Agent v2 - GPT-4o, improved tool selection to 88%, argument accuracy 90%",
+    "content_hash": "15a8564941761a9285ceade5098e900ec16afd30d0ad75804fc3d0719495dee5"
+  },
+  "model": {
+    "model_id": "gpt-4o",
+    "base_url": "https://api.openai.com/v1"
+  },
+  "judge_model": {
+    "model_id": "gpt-4o",
+    "base_url": "https://api.openai.com/v1"
+  },
+  "environment": {
+    "python_version": "3.12.0",
+    "platform": "macOS-14.0",
+    "dependencies": {
+      "deepeval": "1.2.0",
+      "openai": "1.0.0"
+    }
+  },
+  "extra": {},
+  "manifest_hash": "bf16769faa9ffe76d8f15d935502ed87c386dc8249ece1555f851a92913a9934"
+}

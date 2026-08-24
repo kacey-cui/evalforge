@@ -104,7 +104,7 @@ label { font-size: 12px; color: var(--text-secondary); display: block; margin-bo
     <button class="tab" data-tab="history"></button>
     <button class="tab" data-tab="compare"></button>
     <button class="tab" data-tab="report"></button>
-    <button class="tab" data-tab="report-compare"></button>
+    <button class="tab" data-tab="report-compare" style="display:none;"></button>
     <button id="lang-toggle" onclick="toggleLang()" style="margin-left:auto; padding:8px 16px; border:1px solid var(--border); background:none; cursor:pointer; border-radius:6px; font-size:13px; color:var(--text-secondary);">🌐 EN</button>
   </nav>
   <div id="tab-overview" class="tab-content"></div>
@@ -312,7 +312,7 @@ const I18N_EN = {
   '📂 项目': '📂 Project',
   '没有找到文件系统 Metrics。': 'has no filesystem Metrics.',
   '请确认': 'Please make sure the',
-  '目录下有 JSON 文件，且 git_bridge 正在运行（端口 8081）。': 'directory contains JSON files, and that git_bridge is running (port 8081).',
+  '目录下有 JSON 文件，且 git_bridge 正在运行（端口 9091）。': 'directory contains JSON files, and that git_bridge is running (port 9091).',
   '✅ 导入完成': '✅ Import complete',
   '导入: N 个 Metric': 'Imported: N Metrics',
   '跳过: N 个（格式不合法）': 'Skipped: N (invalid format)',
@@ -324,7 +324,7 @@ const I18N_EN = {
   '字段数:': 'Fields:',
   '✅ 已保存到文件系统:': '✅ Saved to filesystem:',
   '❌ 保存失败，请确认 git_bridge 正在运行': '❌ Save failed, please make sure git_bridge is running',
-  '❌ 连接 git_bridge 失败（端口 8081）。请先运行 bash serve.sh': '❌ Failed to connect to git_bridge (port 8081). Run bash serve.sh first',
+  '❌ 连接 git_bridge 失败（端口 9091）。请先运行 bash serve.sh': '❌ Failed to connect to git_bridge (port 9091). Run bash serve.sh first',
 };
 let _lang = localStorage.getItem('evalplatform_lang') || 'zh';
 function t(s) { return (_lang === 'zh' || !(s in I18N_EN)) ? s : I18N_EN[s]; }
@@ -378,6 +378,8 @@ let canvasGlobal = {
   modelBaseUrl: '',
   modelId: '',
   skillName: 'my-eval-skill',
+  dataset: null,
+  template: null,
 };
 
 // ============================================================
@@ -423,9 +425,36 @@ function loadCanvasConfig() {
   try {
     canvasFields = JSON.parse(localStorage.getItem(_pk('canvas_fields')) || '[]');
     canvasActiveField = parseInt(localStorage.getItem(_pk('canvas_active')) || '0');
-    canvasGlobal = JSON.parse(localStorage.getItem(_pk('canvas_global')) || '{}') || canvasGlobal;
+    canvasGlobal = { ...canvasGlobal, ...(JSON.parse(localStorage.getItem(_pk('canvas_global')) || '{}') || {}) };
   } catch {}
   if (canvasFields.length === 0) { canvasFields = [{ name: '', gatePipeline: [], scorePipeline: [] }]; }
+}
+
+function _hasMeaningfulCanvas() {
+  if (!Array.isArray(canvasFields) || canvasFields.length === 0) return false;
+  return canvasFields.some(f =>
+    (f.name && f.name.trim()) ||
+    (f.gatePipeline && f.gatePipeline.length) ||
+    (f.scorePipeline && f.scorePipeline.length)
+  );
+}
+
+function normalizeCanvasPayload(canvas) {
+  if (!canvas || typeof canvas !== 'object') return null;
+  const fields = Array.isArray(canvas.fields)
+    ? canvas.fields
+    : (Array.isArray(canvas.canvasFields) ? canvas.canvasFields : null);
+  const global = {
+    ...(canvas.global || {}),
+    skillName: canvas.global?.skillName || canvas.skillName || canvasGlobal.skillName,
+    modelBaseUrl: canvas.global?.modelBaseUrl || canvas.modelBaseUrl || canvasGlobal.modelBaseUrl,
+    modelId: canvas.global?.modelId || canvas.modelId || canvasGlobal.modelId,
+    judgeModelBaseUrl: canvas.global?.judgeModelBaseUrl || canvas.judgeModelBaseUrl,
+    judgeModelId: canvas.global?.judgeModelId || canvas.judgeModelId,
+    dataset: canvas.global?.dataset || canvas.dataset || null,
+    template: canvas.global?.template || canvas.template || null,
+  };
+  return { fields, global };
 }
 
 // ============================================================
@@ -446,9 +475,19 @@ document.querySelectorAll('.tab').forEach(btn => {
     if (tabName === 'history') renderHistory();
     if (tabName === 'compare') renderCompare();
     if (tabName === 'report') renderReport();
-    if (tabName === 'report-compare') renderCompare();
+    if (tabName === 'report-compare') renderReportComparePlaceholder();
   });
 });
+
+function renderReportComparePlaceholder() {
+  const container = document.getElementById('tab-report-compare');
+  container.style.flexDirection = 'column';
+  container.innerHTML = `
+    <div class="card" style="margin:20px; color:var(--text-secondary);">
+      <h3 style="margin-bottom:8px;">${t('📊 报告对比')}</h3>
+      <p>${t('该入口暂未实现；当前可使用 Run 对比查看分数、Dataset、Metric、Skill 和模型差异。')}</p>
+    </div>`;
+}
 
 // ============================================================
 // Metric 库 Tab
@@ -487,7 +526,7 @@ function renderMetricLibrary() {
 async function importProjectMetrics() {
   const metrics = await _fetchBridge(`/api/projects/${encodeURIComponent(currentProject)}/metrics`);
   if (!metrics || !Array.isArray(metrics) || metrics.length === 0) {
-    alert(`${t('📂 项目')} "${currentProject}" ${t('没有找到文件系统 Metrics。')}\n\n${t('请确认')} data/projects/${currentProject}/metrics/ ${t('目录下有 JSON 文件，且 git_bridge 正在运行（端口 8081）。')}`);
+    alert(`${t('📂 项目')} "${currentProject}" ${t('没有找到文件系统 Metrics。')}\n\n${t('请确认')} data/projects/${currentProject}/metrics/ ${t('目录下有 JSON 文件，且 git_bridge 正在运行（端口 9091）。')}`);
     return;
   }
 
@@ -510,27 +549,34 @@ async function importProjectMetrics() {
   renderMetricLibrary();
 }
 
-async function loadCanvasFromFile() {
+async function loadCanvasFromFile(options = {}) {
+  const silent = !!options.silent;
   const canvas = await _fetchBridge(`/api/projects/${encodeURIComponent(currentProject)}/canvas`);
   if (!canvas || canvas.error) {
-    alert(`${t('📂 未找到')} data/projects/${currentProject}/canvas.json\n\n${t('请先用 Agent 生成 canvas.json，或在 Canvas 编排里配置后点')} "${t('保存到文件')}"${t('。')}`);
-    return;
+    if (!silent) {
+      alert(`${t('📂 未找到')} data/projects/${currentProject}/canvas.json\n\n${t('请先用 Agent 生成 canvas.json，或在 Canvas 编排里配置后点')} "${t('保存到文件')}"${t('。')}`);
+    }
+    return false;
   }
 
-  // 把文件系统的 canvas 合并进 UI 状态
-  if (canvas.fields && Array.isArray(canvas.fields)) {
-    canvasFields = canvas.fields;
+  const normalized = normalizeCanvasPayload(canvas);
+  if (!normalized || !Array.isArray(normalized.fields)) {
+    if (!silent) alert(t('❌ Canvas 文件格式不合法'));
+    return false;
   }
-  if (canvas.global) {
-    canvasGlobal = { ...canvasGlobal, ...canvas.global };
-  }
+
+  canvasFields = normalized.fields;
+  canvasGlobal = { ...canvasGlobal, ...normalized.global };
   canvasActiveField = 0;
 
   // 持久化到 localStorage
   saveCanvasConfig();
 
-  alert(`${t('✅ 已从文件系统加载 Canvas 配置')}\n${t('字段数:')} ${canvasFields.length}`);
-  renderCanvas();
+  if (!silent) {
+    alert(`${t('✅ 已从文件系统加载 Canvas 配置')}\n${t('字段数:')} ${canvasFields.length}`);
+    renderCanvas();
+  }
+  return true;
 }
 
 async function saveCanvasToFile() {
@@ -555,7 +601,7 @@ async function saveCanvasToFile() {
       alert(t('❌ 保存失败，请确认 git_bridge 正在运行'));
     }
   } catch (e) {
-    alert(t('❌ 连接 git_bridge 失败（端口 8081）。请先运行 bash serve.sh'));
+    alert(t('❌ 连接 git_bridge 失败（端口 9091）。请先运行 bash serve.sh'));
   }
 }
 
@@ -1130,22 +1176,29 @@ function renderParamInput(param, value, zone, pipelineIndex) {
 // ============================================================
 // 预置 Metric 初始化
 // ============================================================
-async function refreshMetrics() {
-  // 从 data/metrics/ 目录重新加载所有 JSON 文件
-  const presetFiles = [
-    'data/metrics/non_llm/json_schema.json',
-    'data/metrics/non_llm/latency.json',
-    'data/metrics/non_llm/context_length.json',
-    'data/metrics/non_llm/keyword_hit.json',
-    'data/metrics/non_llm/sentence_count.json',
-    'data/metrics/llm/accuracy.json',
-    'data/metrics/llm/completeness.json',
-    'data/metrics/llm/no_hallucination.json',
-  ];
-  const results = await Promise.all(presetFiles.map(f =>
-    fetch(f).then(r => r.json()).catch(() => null)
+const PRESET_METRIC_FILES = [
+  'data/metrics/non_llm/json_schema.json',
+  'data/metrics/non_llm/latency.json',
+  'data/metrics/non_llm/context_length.json',
+  'data/metrics/non_llm/keyword_hit.json',
+  'data/metrics/non_llm/sentence_count.json',
+  'data/metrics/non_llm/recall_at_k.json',
+  'data/metrics/llm/accuracy.json',
+  'data/metrics/llm/completeness.json',
+  'data/metrics/llm/no_hallucination.json',
+];
+
+async function loadPresetMetricsFromDisk() {
+  const bridgeMetrics = await _fetchBridge('/api/metrics');
+  if (Array.isArray(bridgeMetrics) && bridgeMetrics.length > 0) return bridgeMetrics;
+  const results = await Promise.all(PRESET_METRIC_FILES.map(f =>
+    fetch(f).then(r => r.ok ? r.json() : null).catch(() => null)
   ));
-  const loaded = results.filter(Boolean);
+  return results.filter(Boolean);
+}
+
+async function refreshMetrics() {
+  const loaded = await loadPresetMetricsFromDisk();
   // 更新已有 metric，添加新 metric
   loaded.forEach(m => MetricStore.save(m));
   renderMetricLibrary();
@@ -1160,28 +1213,12 @@ function resetMetrics() {
   initPresetMetrics();
 }
 
-function initPresetMetrics() {
-  if (MetricStore.getAll().length > 0) return; // 已有数据，不覆盖
-
-  // 从预置 JSON 文件加载
-  const presetFiles = [
-    'data/metrics/non_llm/json_schema.json',
-    'data/metrics/non_llm/latency.json',
-    'data/metrics/non_llm/context_length.json',
-    'data/metrics/non_llm/keyword_hit.json',
-    'data/metrics/non_llm/sentence_count.json',
-    'data/metrics/llm/accuracy.json',
-    'data/metrics/llm/completeness.json',
-    'data/metrics/llm/no_hallucination.json',
-  ];
-
-  Promise.all(presetFiles.map(f =>
-    fetch(f).then(r => r.json()).catch(() => null)
-  )).then(metrics => {
-    metrics.filter(Boolean).forEach(m => MetricStore.save(m));
-    renderMetricLibrary();
-    renderCanvas();
+async function initPresetMetrics() {
+  const loaded = await loadPresetMetricsFromDisk();
+  loaded.forEach(m => {
+    if (!MetricStore.getById(m.id)) MetricStore.save(m);
   });
+  return MetricStore.getAll();
 }
 
 // ============================================================
@@ -1385,32 +1422,68 @@ function renderProjectSidebar() {
   const cnt = document.getElementById('project-count');
   if (cnt) cnt.textContent = t('N 个项目').replace('N', projectList.length);
 }
-function switchProject(proj) {
+
+async function loadProjectsFromFileSystem() {
+  const projects = await _fetchBridge('/api/projects');
+  if (!Array.isArray(projects) || projects.length === 0) {
+    if (!projectList.includes(currentProject)) projectList.unshift(currentProject);
+    return projectList;
+  }
+  const ids = projects.map(p => p.id).filter(Boolean);
+  projectList = Array.from(new Set([...ids, ...projectList.filter(p => p !== 'default')]));
+  if (!projectList.includes(currentProject) || currentProject === 'default') {
+    currentProject = projectList[0];
+    localStorage.setItem('deepeval_current_project', currentProject);
+  }
+  _saveProjects(projectList);
+  return projectList;
+}
+
+function getActiveTabName() {
+  return document.querySelector('#tabs .tab.active')?.dataset.tab || 'metrics';
+}
+
+function renderActiveTab() {
+  const tabName = getActiveTabName();
+  if (tabName === 'overview') renderOverview();
+  if (tabName === 'metrics') renderMetricLibrary();
+  if (tabName === 'canvas') renderCanvas();
+  if (tabName === 'export') renderExportTab();
+  if (tabName === 'history') renderHistory();
+  if (tabName === 'compare') renderCompare();
+  if (tabName === 'report') renderReport();
+}
+
+async function hydrateProjectStateFromContracts() {
+  MetricStore.reload();
+  await initPresetMetrics();
+  loadCanvasConfig();
+  if (!_hasMeaningfulCanvas()) {
+    await loadCanvasFromFile({ silent: true });
+  }
+}
+
+async function switchProject(proj) {
   currentProject = proj;
   localStorage.setItem('deepeval_current_project', proj);
-  MetricStore.reload();
-  loadCanvasConfig();
+  await hydrateProjectStateFromContracts();
+  _historyRuns = [];
+  _historySelected.clear();
   renderProjectSidebar();
-  renderMetricLibrary();
-  renderCanvas();
-  renderExportTab();
+  renderActiveTab();
 }
-function newProject() {
+async function newProject() {
   const name = prompt(t('项目名称：'));
   if (!name || !name.trim()) return;
   const id = name.trim().replace(/\s+/g, '_').toLowerCase();
   if (projectList.includes(id)) { alert(t('项目已存在')); return; }
   projectList.push(id); _saveProjects(projectList);
   currentProject = id; localStorage.setItem('deepeval_current_project', id);
-  MetricStore.reload();
-  initPresetMetrics();
-  loadCanvasConfig();
+  await hydrateProjectStateFromContracts();
   renderProjectSidebar();
-  renderMetricLibrary();
-  renderCanvas();
-  renderExportTab();
+  renderActiveTab();
 }
-function deleteProject(proj) {
+async function deleteProject(proj) {
   if (projectList.length <= 1) { alert(t('至少保留一个项目')); return; }
   if (!confirm(`${t('确定删除项目')} "${proj}"？\n${t('其所有指标和管线配置将被清除。')}`)) return;
   ['metrics', 'canvas_fields', 'canvas_active', 'canvas_global'].forEach(k => {
@@ -1424,17 +1497,38 @@ function deleteProject(proj) {
     currentProject = projectList[0];
     localStorage.setItem('deepeval_current_project', currentProject);
   }
-  MetricStore.reload(); loadCanvasConfig();
+  await hydrateProjectStateFromContracts();
   renderProjectSidebar();
-  renderMetricLibrary();
-  renderCanvas();
-  renderExportTab();
+  renderActiveTab();
 }
 
 // ============================================================
 // 概览 Tab
 // ============================================================
-const GIT_BRIDGE = 'http://localhost:8081';
+const GIT_BRIDGE = 'http://localhost:9091';
+
+const RUN_STATUS_COLORS = {
+  completed: 'var(--success)',
+  running: 'var(--primary)',
+  failed: 'var(--danger)',
+  canceled: 'var(--text-secondary)',
+  pass: 'var(--success)',
+  fail: 'var(--danger)',
+  partial: '#f59e0b',
+};
+const RUN_STATUS_ICONS = {
+  completed: '✅',
+  running: '⏳',
+  failed: '❌',
+  canceled: '⊘',
+  pass: '✅',
+  fail: '❌',
+  partial: '⚠️',
+};
+function formatRunStatus(status) {
+  const labels = { completed: 'Completed', running: 'Running', failed: 'Failed', canceled: 'Canceled' };
+  return labels[status] || status || 'Unknown';
+}
 
 async function _fetchBridge(path) {
   try {
@@ -1455,15 +1549,13 @@ async function renderOverview() {
   // 读取最近 Run
   const runs = await _fetchBridge(`/api/runs?project=${encodeURIComponent(currentProject)}`);
   const latestRun = runs && runs.length > 0 ? runs[0] : null;
+  const datasetPayload = await _fetchBridge(`/api/projects/${encodeURIComponent(currentProject)}/dataset`);
 
   // 读取当前 Canvas 摘要
   const fields = canvasFields || [];
   const totalMetrics = fields.reduce(
     (acc, f) => acc + (f.gatePipeline || []).length + (f.scorePipeline || []).length, 0
   );
-
-  const statusColors = { pass: 'var(--success)', fail: 'var(--danger)', partial: '#f59e0b' };
-  const statusIcons = { pass: '✅', fail: '❌', partial: '⚠️' };
 
   container.innerHTML = `
     <div style="display:flex; flex-direction:column; gap:20px; width:100%;">
@@ -1492,6 +1584,8 @@ async function renderOverview() {
           </button>
         </div>
 
+        ${renderDatasetSummary(datasetPayload)}
+
         <!-- 最近 Run + 快捷操作 -->
         <div style="display:flex; flex-direction:column; gap:16px;">
           <div class="card">
@@ -1512,8 +1606,8 @@ async function renderOverview() {
                 </div>
                 <div style="font-size:13px;">
                   <span style="color:var(--text-secondary);">${t('状态:')}</span>
-                  <span style="color:${statusColors[latestRun.status] || 'inherit'}">
-                    ${statusIcons[latestRun.status] || '?'} ${latestRun.status}
+                  <span style="color:${RUN_STATUS_COLORS[latestRun.status] || 'inherit'}">
+                    ${RUN_STATUS_ICONS[latestRun.status] || '?'} ${formatRunStatus(latestRun.status)}
                   </span>
                 </div>
                 <div style="font-size:13px;">
@@ -1544,6 +1638,39 @@ async function renderOverview() {
       </div>
     </div>
   `;
+}
+
+function renderDatasetSummary(payload) {
+  if (!payload || !payload.dataset) {
+    return `
+      <div class="card">
+        <h3 style="margin-bottom:12px;">🗂️ Dataset</h3>
+        <p style="color:var(--text-secondary); font-size:13px;">${t('当前项目未声明 Dataset。')}</p>
+      </div>`;
+  }
+  const ds = payload.dataset;
+  const cases = payload.cases || [];
+  const sampleCases = cases.slice(0, 3).map(c => `
+    <div style="padding:8px; background:var(--bg); border-radius:6px; margin-top:6px; font-size:12px;">
+      <strong>Case #${c.case_id}</strong>
+      <div style="color:var(--text-secondary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+        ${escapeHtml(c.input || c.question || '')}
+      </div>
+    </div>`).join('');
+  return `
+    <div class="card">
+      <h3 style="margin-bottom:12px;">🗂️ Dataset</h3>
+      <div style="font-size:13px;">
+        <strong>${escapeHtml(ds.name || ds.dataset_id)}</strong>
+        <div style="color:var(--text-secondary); margin-top:4px;">
+          <code>${escapeHtml(ds.dataset_id)}</code> · ${ds.n_cases ?? cases.length} cases
+        </div>
+        <div style="color:var(--text-secondary); margin-top:4px;">
+          version <code>${String(ds.version_hash || '').slice(0, 12)}</code>
+        </div>
+      </div>
+      ${sampleCases ? `<div style="margin-top:10px;">${sampleCases}</div>` : ''}
+    </div>`;
 }
 
 // ============================================================
@@ -1577,9 +1704,6 @@ async function renderHistory() {
 }
 
 function _renderHistoryTable(container) {
-  const statusColors = { pass: 'var(--success)', fail: 'var(--danger)', partial: '#f59e0b' };
-  const statusIcons = { pass: '✅', fail: '❌', partial: '⚠️' };
-
   container.innerHTML = `
     <div style="display:flex; flex-direction:column; gap:16px; width:100%;">
       <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -1630,8 +1754,8 @@ function _renderHistoryTable(container) {
                 <td style="padding:10px 12px;">
                   <strong>${r.overall_score != null ? r.overall_score.toFixed(4) : 'N/A'}</strong>
                 </td>
-                <td style="padding:10px 12px; color:${statusColors[r.status]||'inherit'};">
-                  ${statusIcons[r.status]||'?'} ${r.status}
+                <td style="padding:10px 12px; color:${RUN_STATUS_COLORS[r.status]||'inherit'};">
+                  ${RUN_STATUS_ICONS[r.status]||'?'} ${formatRunStatus(r.status)}
                 </td>
                 <td style="padding:10px 12px;">
                   ${r.triggered_by === 'agent' ? '🤖 Agent' : '🖱️ UI'}
@@ -1813,6 +1937,47 @@ function _loadGroupIntoCompare(groupName) {
   });
 }
 
+function describeMetricDiffField(metricId, fieldPath) {
+  const metric = MetricStore.getById(metricId);
+  const paramMatch = String(fieldPath || '').match(/^params\[(\d+)\](?:\.(.+))?$/);
+  if (metric && paramMatch) {
+    const param = (metric.params || [])[Number(paramMatch[1])];
+    if (param) {
+      const suffix = paramMatch[2] ? `.${paramMatch[2]}` : '';
+      return `${param.label || param.key} (${param.key})${suffix}`;
+    }
+  }
+  return fieldPath;
+}
+
+function renderDatasetDiffDetail(detail) {
+  if (!detail || typeof detail !== 'object') return '';
+  const summary = detail.summary || {};
+  const summaryLine = `${summary.added || 0} cases added · ${summary.removed || 0} removed · ${summary.modified || 0} modified`;
+  const caseRows = [
+    ...(detail.modified_cases || []).slice(0, 5),
+    ...(detail.added_cases || []).slice(0, 2),
+    ...(detail.removed_cases || []).slice(0, 2),
+  ].slice(0, 6).map(c => {
+    const changes = (c.changes || []).slice(0, 4).map(ch => {
+      if (ch.type === 'modified') {
+        return `<div><code>${ch.field}</code>: <span style="background:#fee2e2;padding:1px 4px;border-radius:2px;">${escapeHtml(JSON.stringify(ch.before))}</span> → <span style="background:#dcfce7;padding:1px 4px;border-radius:2px;">${escapeHtml(JSON.stringify(ch.after))}</span></div>`;
+      }
+      if (ch.type === 'added') return `<div><code>${ch.field}</code>: added</div>`;
+      if (ch.type === 'removed') return `<div><code>${ch.field}</code>: removed</div>`;
+      return `<div><code>${ch.field}</code>: ${ch.type}</div>`;
+    }).join('');
+    return `<div style="font-size:12px; padding:6px 0; border-top:1px solid var(--border);">
+      <strong>Case #${c.case_id}</strong>
+      <div style="margin-top:4px; color:var(--text-secondary);">${changes}</div>
+    </div>`;
+  }).join('');
+  return `<div style="font-size:12px; margin-top:8px; color:var(--text-secondary);">
+    <strong>${summaryLine}</strong>
+    ${caseRows ? `<div style="margin-top:6px;">${caseRows}</div>` : ''}
+  </div>`;
+}
+
 async function _runDiff() {
   const runA = document.getElementById('compare-run-a').value;
   const runB = document.getElementById('compare-run-b').value;
@@ -1974,17 +2139,7 @@ async function _runDiff() {
       const badge = ds.status === 'unchanged' ? '<span style="color:var(--success);">✓ unchanged</span>' :
                     ds.status === 'modified' ? '<span style="color:var(--warning);">⚠ modified</span>' :
                     '<span style="color:var(--danger);">✗ ' + ds.status + '</span>';
-      let detail = '';
-      if (ds.detail && typeof ds.detail === 'object') {
-        const dd = ds.detail;
-        const added = dd.added_cases?.length || 0;
-        const removed = dd.removed_cases?.length || 0;
-        const modified = dd.modified_cases?.length || 0;
-        if (added || removed || modified) {
-          detail = `<div style="font-size:12px; margin-top:6px; color:var(--text-secondary);">
-            +${added} added, -${removed} removed, ~${modified} modified cases</div>`;
-        }
-      }
+      const detail = renderDatasetDiffDetail(ds.detail);
       sections.push(`
         <div class="card">
           <h3 style="margin-bottom:8px;">🗂️ Dataset Version</h3>
@@ -2009,9 +2164,10 @@ async function _runDiff() {
           fieldDiff = '<div style="font-size:11px; margin-top:4px; padding-left:12px;">' +
             m.detail.changes.map(c => {
               if (c.type === 'modified') {
-                return `<div>• <code>${c.field}</code>: <span style="background:#fee2e2;padding:1px 4px;border-radius:2px;">${JSON.stringify(c.before)}</span> → <span style="background:#dcfce7;padding:1px 4px;border-radius:2px;">${JSON.stringify(c.after)}</span></div>`;
+                const fieldLabel = describeMetricDiffField(m.metric_id, c.field);
+                return `<div>• <code>${escapeHtml(fieldLabel)}</code>: <span style="background:#fee2e2;padding:1px 4px;border-radius:2px;">${escapeHtml(JSON.stringify(c.before))}</span> → <span style="background:#dcfce7;padding:1px 4px;border-radius:2px;">${escapeHtml(JSON.stringify(c.after))}</span></div>`;
               }
-              return `<div>• <code>${c.field}</code>: ${c.type}</div>`;
+              return `<div>• <code>${escapeHtml(describeMetricDiffField(m.metric_id, c.field))}</code>: ${c.type}</div>`;
             }).join('') + '</div>';
         }
         return `<div style="margin-bottom:8px; padding:8px; background:var(--bg); border-radius:4px;">
@@ -2129,12 +2285,22 @@ function _svgLine(chart, W, H) {
   const yMax = chart.y_max ?? 1;
 
   const allX = chart.series.flatMap(s => s.points.map(p => p.x));
-  const xMin = Math.min(...allX);
-  const xMax = Math.max(...allX);
+  const xMode = allX.every(v => typeof v === 'number' && Number.isFinite(v)) ? 'numeric' : 'categorical';
+  const xValues = xMode === 'numeric'
+    ? allX
+    : Array.from(new Set(chart.series.flatMap(s => s.points.map(p => String(p.x)))));
+  const xMin = xMode === 'numeric' ? Math.min(...xValues) : 0;
+  const xMax = xMode === 'numeric' ? Math.max(...xValues) : Math.max(xValues.length - 1, 1);
   const xRange = xMax - xMin || 1;
 
-  const sx = v => ((v - xMin) / xRange) * cW;
-  const sy = v => cH - ((v - yMin) / (yMax - yMin)) * cH;
+  const sx = v => {
+    if (xMode === 'categorical') {
+      const idx = xValues.indexOf(String(v));
+      return ((idx < 0 ? 0 : idx) / xRange) * cW;
+    }
+    return ((v - xMin) / xRange) * cW;
+  };
+  const sy = v => cH - ((v - yMin) / ((yMax - yMin) || 1)) * cH;
 
   // grid + y-axis ticks
   const yTicks = [0, 0.2, 0.4, 0.6, 0.8, 1.0].filter(v => v >= yMin && v <= yMax);
@@ -2430,15 +2596,12 @@ function _reportChangePage(tableId, newPage) {
 }
 
 // 页面初始化
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   _applyStaticLang();
+  await loadProjectsFromFileSystem();
+  await hydrateProjectStateFromContracts();
   renderProjectSidebar();
-  MetricStore.reload();
-  initPresetMetrics();
-  loadCanvasConfig();
-  renderMetricLibrary();
-  renderCanvas();
-  renderExportTab();
+  renderActiveTab();
 });
 </script>
     </div><!-- end main content -->

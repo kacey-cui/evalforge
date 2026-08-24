@@ -1,0 +1,322 @@
+[
+  {
+    "case_id": 0,
+    "input": "Find the cheapest flight from New York to London for August 20-27.",
+    "expected_output": "The cheapest round-trip flight is $487 on Norse Atlantic Airways, departing JFK at 11:30 PM and arriving LGW at 11:15 AM. Alternative: $512 on British Airways from EWR.",
+    "category": "flight_search",
+    "tool_trace": "search_flight(origin='JFK',dest='LON',date='2026-08-20',return_date='2026-08-27') -> 15 results; filter by price; cheapest: Norse Atlantic $487",
+    "difficulty": "easy"
+  },
+  {
+    "case_id": 1,
+    "input": "Find a hotel in Paris under $200/night near the Eiffel Tower for 3 nights starting August 15.",
+    "expected_output": "Hotel Le Walt (4-star, 0.3mi from Eiffel Tower): $189/night. Hotel Eiffel Blomet (3-star, 0.5mi): $165/night. Hotel Ares Eiffel (4-star, 0.4mi): $195/night.",
+    "category": "hotel_search",
+    "tool_trace": "search_hotel(location='Paris',near='Eiffel Tower',max_price=200,check_in='2026-08-15',nights=3) -> 8 results",
+    "difficulty": "easy"
+  },
+  {
+    "case_id": 2,
+    "input": "Plan a 5-day trip to Tokyo with a budget of $2000 including flights and hotel.",
+    "expected_output": "Flight: LAX-NRT round-trip $892 (Zipair). Hotel: APA Hotel Shinjuku $78/night x5 = $390. Remaining: $718 for food, transport, activities. Total: $1282 + $718 = $2000.",
+    "category": "multi_step",
+    "tool_trace": "search_flight(origin='LAX',dest='TYO') -> $892; search_hotel(location='Shinjuku',max_price=100) -> $78; calculate_budget(total=2000)",
+    "difficulty": "medium"
+  },
+  {
+    "case_id": 3,
+    "input": "Compare the total cost of flying vs taking the train from Amsterdam to Paris for 2 people.",
+    "expected_output": "Flight: AMS-CDG $89/person x2 = $178 + $40 airport transfer = $218 total, 3.5 hours door-to-door. Train: Thalys $69/person x2 = $138, 3.3 hours city center to city center. Train is cheaper by $80.",
+    "category": "comparison",
+    "tool_trace": "search_flight(origin='AMS',dest='PAR',passengers=2) -> $89/person; search_train(origin='AMS',dest='PAR',passengers=2) -> $69/person; compare()",
+    "difficulty": "medium"
+  },
+  {
+    "case_id": 4,
+    "input": "Find a restaurant in Barcelona with vegetarian options, rating above 4.5, open on Sunday.",
+    "expected_output": "Teresa Carles (4.7 stars, vegetarian): Carrer de Jovellanos 2. Flax & Kale (4.6 stars, flexitarian): Carrer dels Tallers 74. Rasoterra (4.5 stars, vegetarian): Carrer del Palau 5.",
+    "category": "restaurant_search",
+    "tool_trace": "search_restaurant(location='Barcelona',dietary='vegetarian',min_rating=4.5,open_day='Sunday') -> 3 results",
+    "difficulty": "easy"
+  },
+  {
+    "case_id": 5,
+    "input": "What's the weather forecast for Bangkok for the next 3 days and should I pack an umbrella?",
+    "expected_output": "Aug 20: 33C, 80% chance thunderstorms. Aug 21: 34C, 60% chance rain. Aug 22: 32C, 70% chance thunderstorms. Yes, definitely pack an umbrella - monsoon season with daily rain expected.",
+    "category": "weather_check",
+    "tool_trace": "get_weather(location='Bangkok',days=3) -> daily forecasts with precipitation %",
+    "difficulty": "easy"
+  },
+  {
+    "case_id": 6,
+    "input": "Convert 500 Euros to Japanese Yen and tell me if that's enough for a week of meals in Tokyo.",
+    "expected_output": "500 EUR = 81,500 JPY (rate 163:1). Average meal in Tokyo: breakfast 500-800 JPY, lunch 1000-1500 JPY, dinner 1500-3000 JPY. Weekly estimate: 28,000-42,000 JPY. 500 EUR is more than enough for a week of meals.",
+    "category": "currency_conversion",
+    "tool_trace": "convert_currency(amount=500,from='EUR',to='JPY') -> 81500; search_cost_of_living(city='Tokyo',category='meals')",
+    "difficulty": "medium"
+  },
+  {
+    "case_id": 7,
+    "input": "Find the best travel insurance for a 2-week trip to Southeast Asia covering medical and theft.",
+    "expected_output": "World Nomads Explorer Plan: $89 (covers medical up to $100K, theft up to $3K, adventure activities). SafetyWing Nomad Insurance: $56/month (medical up to $250K, theft up to $3K). Allianz OneTrip Prime: $95 (medical $50K, theft $1K).",
+    "category": "insurance_search",
+    "tool_trace": "search_insurance(destination='Southeast Asia',duration_days=14,coverage=['medical','theft']) -> 3 results",
+    "difficulty": "medium"
+  },
+  {
+    "case_id": 8,
+    "input": "Book a rental car in Lisbon for 4 days, automatic transmission, pickup at airport.",
+    "expected_output": "Sixt: VW Golf automatic, $42/day, unlimited mileage. Europcar: Renault Megane automatic, $38/day, 1000km included. Hertz: Ford Focus automatic, $45/day, unlimited mileage. Best value: Europcar $152 total.",
+    "category": "car_rental",
+    "tool_trace": "search_car_rental(location='Lisbon Airport',days=4,transmission='automatic') -> 3 results",
+    "difficulty": "easy"
+  },
+  {
+    "case_id": 9,
+    "input": "Find a direct flight from Chicago to Dublin, any date in September, under $500.",
+    "expected_output": "Aer Lingus: ORD-DUB direct, Sep 12-19, $478 round-trip. United Airlines: ORD-DUB direct, Sep 15-22, $495 round-trip. No other direct options under $500 in September.",
+    "category": "flight_search",
+    "tool_trace": "search_flight(origin='ORD',dest='DUB',direct_only=True,month='2026-09',max_price=500) -> 2 results",
+    "difficulty": "medium"
+  },
+  {
+    "case_id": 10,
+    "input": "I need a visa for Vietnam. What are the requirements for a US citizen staying 10 days?",
+    "expected_output": "US citizens: e-Visa available for stays up to 90 days. Apply online at official portal. Requirements: passport valid 6+ months beyond arrival, digital photo, $25 fee. Processing: 3 business days. No visa on arrival without pre-approval letter.",
+    "category": "visa_check",
+    "tool_trace": "check_visa_requirements(nationality='US',destination='Vietnam',duration_days=10) -> e-Visa eligible",
+    "difficulty": "easy"
+  },
+  {
+    "case_id": 11,
+    "input": "Find the best SIM card for 2 weeks in Japan with 10GB data.",
+    "expected_output": "Sakura Mobile: 15GB, $35, pickup at Narita/Haneda. Mobal: 8GB, $28, delivery to hotel. B-Mobile: 10GB, $30, pickup at airport kiosks. Best: B-Mobile for 10GB at $30.",
+    "category": "sim_card_search",
+    "tool_trace": "search_sim(destination='Japan',data_gb=10,duration_days=14) -> 3 results",
+    "difficulty": "easy"
+  },
+  {
+    "case_id": 12,
+    "input": "Plan a route from Berlin to Prague to Vienna to Budapest by train, 10 days total.",
+    "expected_output": "Day 1-3 Berlin, train to Prague (4.5h, $39). Day 3-5 Prague, train to Vienna (4h, $29). Day 5-7 Vienna, train to Budapest (2.5h, $25). Day 7-10 Budapest. Total train cost: $93.",
+    "category": "multi_city_route",
+    "tool_trace": "search_train_route(cities=['Berlin','Prague','Vienna','Budapest'],total_days=10) -> route with segments",
+    "difficulty": "hard"
+  },
+  {
+    "case_id": 13,
+    "input": "Find a pet-friendly hotel in Portland, OR with parking, under $150/night, for 2 nights.",
+    "expected_output": "Hotel deLuxe (4-star): $145/night, pet fee $25, valet parking $35. Kimpton RiverPlace (4-star): $149/night, no pet fee, parking $30. McMenamins Crystal Hotel (3-star): $120/night, pet fee $15, lot parking $20.",
+    "category": "hotel_search",
+    "tool_trace": "search_hotel(location='Portland OR',pet_friendly=True,parking=True,max_price=150,nights=2) -> 3 results",
+    "difficulty": "easy"
+  },
+  {
+    "case_id": 14,
+    "input": "What's the cheapest way to get from London Heathrow to central London for a family of 4?",
+    "expected_output": "Heathrow Express: 25/person = 100 total (15 min). Elizabeth Line: 12.80/person = 51.20 total (30 min). Piccadilly Line (Tube): 5.60/person = 22.40 total (50 min). Taxi: 60-90 total (45-60 min). Cheapest: Piccadilly Line at 22.40.",
+    "category": "transport_comparison",
+    "tool_trace": "search_transport(origin='LHR',destination='Central London',passengers=4) -> compare modes",
+    "difficulty": "medium"
+  },
+  {
+    "case_id": 15,
+    "input": "Find a yoga retreat in Bali for 5 days, all-inclusive, under $800.",
+    "expected_output": "Serenity Eco Guesthouse (Canggu): 5-day yoga retreat $650 incl. accommodation, 2 yoga classes/day, breakfast, 1 spa treatment. Blooming Lotus Yoga (Ubud): $750 incl. accommodation, 3 classes/day, all meals, meditation.",
+    "category": "activity_search",
+    "tool_trace": "search_retreat(location='Bali',type='yoga',duration_days=5,max_price=800,all_inclusive=True) -> 2 results",
+    "difficulty": "medium"
+  },
+  {
+    "case_id": 16,
+    "input": "Is it safe to travel to Cairo right now? Check travel advisories.",
+    "expected_output": "US State Dept: Level 3 - Reconsider Travel (increased risk of terrorism). UK FCO: Advise against all travel to some areas, rest is orange (essential travel only). Current situation: heightened security, avoid demonstrations, stick to tourist areas.",
+    "category": "safety_check",
+    "tool_trace": "check_travel_advisory(destination='Egypt') -> US Level 3, UK orange; get_safety_tips() -> advice",
+    "difficulty": "medium"
+  },
+  {
+    "case_id": 17,
+    "input": "Find a cruise from Miami to the Bahamas for 4 nights in December, balcony cabin.",
+    "expected_output": "Royal Caribbean: Navigator of the Seas, Dec 10-14, balcony $1,198/person. Carnival: Conquest, Dec 8-12, balcony $879/person. Norwegian: Sky, Dec 14-18, balcony $1,049/person. Best value: Carnival $879.",
+    "category": "cruise_search",
+    "tool_trace": "search_cruise(origin='Miami',destination='Bahamas',nights=4,month='December',cabin='balcony') -> 3 results",
+    "difficulty": "easy"
+  },
+  {
+    "case_id": 18,
+    "input": "What vaccines do I need for a trip to Kenya including a safari?",
+    "expected_output": "Required: Yellow Fever (certificate required if arriving from endemic country). Recommended: Hepatitis A, Typhoid, Tetanus, Polio, Meningitis, Rabies (for safari). Malaria prophylaxis strongly recommended. Consult travel clinic 4-6 weeks before departure.",
+    "category": "health_check",
+    "tool_trace": "check_vaccines(destination='Kenya',activities=['safari']) -> required and recommended list",
+    "difficulty": "easy"
+  },
+  {
+    "case_id": 19,
+    "input": "Find the best exchange rate for USD to Thai Baht and where to exchange in Bangkok.",
+    "expected_output": "Current rate: 1 USD = 35.2 THB. SuperRich Thailand (head office): 35.15 THB, best rates. Kasikorn Bank: 34.80 THB. Airport kiosks: 33.50 THB (avoid). Recommendation: exchange small amount at airport, rest at SuperRich downtown.",
+    "category": "currency_exchange",
+    "tool_trace": "get_exchange_rate(from='USD',to='THB') -> 35.2; search_exchange_locations(city='Bangkok') -> ranked",
+    "difficulty": "easy"
+  },
+  {
+    "case_id": 20,
+    "input": "Book a train from Madrid to Barcelona for tomorrow morning, prefer window seat.",
+    "expected_output": "Renfe AVE: Madrid Atocha to Barcelona Sants. Options: 8:00 AM (arrive 10:30 AM), window seat 21A available, 67. 9:30 AM (arrive 12:00 PM), window seat 15A available, 54. Booked: 9:30 AM, seat 15A, 54.",
+    "category": "train_booking",
+    "tool_trace": "search_train(origin='Madrid',dest='Barcelona',date='tomorrow',time='morning',seat_pref='window') -> book",
+    "difficulty": "medium"
+  },
+  {
+    "case_id": 21,
+    "input": "I'm in Rome and want a day trip to Pompeii. What are my options?",
+    "expected_output": "Train: Roma Termini to Napoli Centrale (1h10m, 45), then Circumvesuviana to Pompeii (35min, 3.60). Total: 97.20 round-trip. Guided tour from Rome: 129 incl. transport, guide, entry. Rent car: 60/day + 40 fuel + 16 parking + 16 entry = 132. Best: train for flexibility, tour for convenience.",
+    "category": "day_trip_planning",
+    "tool_trace": "search_transport(origin='Rome',dest='Pompeii',type='day_trip') -> train, tour, car options",
+    "difficulty": "medium"
+  },
+  {
+    "case_id": 22,
+    "input": "Find the best travel credit card with no foreign transaction fees and good travel insurance.",
+    "expected_output": "Chase Sapphire Preferred: no foreign fees, primary rental car insurance, trip cancellation $10K. Capital One Venture: no foreign fees, travel accident insurance, rental car coverage. Amex Platinum: no foreign fees, comprehensive travel insurance, lounge access.",
+    "category": "credit_card_search",
+    "tool_trace": "search_credit_card(features=['no_foreign_fee','travel_insurance']) -> ranked",
+    "difficulty": "medium"
+  },
+  {
+    "case_id": 23,
+    "input": "What's the tip etiquette in Japan, Italy, and the US?",
+    "expected_output": "Japan: No tipping - considered rude. Italy: Service charge (servizio) often included. Round up or leave 5-10% for exceptional service. US: 15-20% standard at restaurants, $1-2 per drink at bar, 10-15% for taxi.",
+    "category": "cultural_info",
+    "tool_trace": "get_cultural_info(countries=['Japan','Italy','US'],topic='tipping') -> etiquette guide",
+    "difficulty": "easy"
+  },
+  {
+    "case_id": 24,
+    "input": "Find an all-inclusive resort in Cancun for 5 nights, adults-only, beachfront, under $2000 total.",
+    "expected_output": "Secrets The Vine (5-star): $1,850 all-inclusive, beachfront, adults-only. Live Aqua (5-star): $1,980 all-inclusive, beachfront, adults-only. Sun Palace (4-star): $1,620 all-inclusive, beachfront, adults-only, couples-only.",
+    "category": "resort_search",
+    "tool_trace": "search_resort(location='Cancun',nights=5,adults_only=True,beachfront=True,max_price=2000,all_inclusive=True) -> 3 results",
+    "difficulty": "easy"
+  },
+  {
+    "case_id": 25,
+    "input": "Plan a trip to see the Northern Lights in Iceland, 4 days, including flights from Boston.",
+    "expected_output": "Flight: BOS-KEF round-trip $498 (Icelandair). Hotel: CenterHotel Laugavegur $145/night x4 = $580. Northern Lights tour: $85/person. Blue Lagoon: $65. Total: $1,228/person. Best time: September-March.",
+    "category": "trip_planning",
+    "tool_trace": "search_flight(origin='BOS',dest='KEF') -> $498; search_hotel() -> $145; search_activities(type='northern_lights') -> $85",
+    "difficulty": "hard"
+  },
+  {
+    "case_id": 26,
+    "input": "What's the cheapest month to fly to Sydney from Los Angeles?",
+    "expected_output": "February: $890 avg (summer in Australia, low demand from US). May: $920. August: $950. Peak: December ($1,450). Cheapest: February. Book 3-4 months ahead for best rates.",
+    "category": "price_analysis",
+    "tool_trace": "search_flight_prices(origin='LAX',dest='SYD',year=2026) -> monthly averages",
+    "difficulty": "medium"
+  },
+  {
+    "case_id": 27,
+    "input": "Find a luggage storage service near Tokyo Station for 8 hours.",
+    "expected_output": "Sagawa Express (Tokyo Station): 500 JPY/bag/day. Ecbo Cloak: 600 JPY/bag/day, multiple locations. Coin Lockers: 300-700 JPY depending on size, limited availability. Best: Ecbo Cloak for guaranteed space.",
+    "category": "service_search",
+    "tool_trace": "search_luggage_storage(location='Tokyo Station',duration_hours=8) -> options",
+    "difficulty": "easy"
+  },
+  {
+    "case_id": 28,
+    "input": "I need to cancel my flight to Paris due to a medical emergency. What are my rights?",
+    "expected_output": "Check your ticket type: refundable vs non-refundable. Non-refundable: may get credit minus cancellation fee ($200-500). Medical emergency: contact airline with doctor's note, some waive fees. Travel insurance with 'cancel for any reason' covers this. Check credit card travel protection.",
+    "category": "policy_check",
+    "tool_trace": "check_cancellation_policy(booking_type='flight',reason='medical_emergency') -> rights and options",
+    "difficulty": "medium"
+  },
+  {
+    "case_id": 29,
+    "input": "Compare Uber vs taxi vs public transit from JFK to Times Square for 1 person at 5 PM.",
+    "expected_output": "Uber X: $65-85, 45-75 min. Yellow Taxi: $52 flat fare + toll + tip = $70, 45-75 min. Public Transit: AirTrain to Jamaica ($8) + LIRR to Penn Station ($10.75) + walk = $18.75, 50-60 min. Best: Public transit for cost, taxi for convenience.",
+    "category": "transport_comparison",
+    "tool_trace": "compare_transport(origin='JFK',dest='Times Square',passengers=1,time='17:00') -> multi-mode",
+    "difficulty": "medium"
+  },
+  {
+    "case_id": 30,
+    "input": "Find a coworking space in Chiang Mai with good WiFi, monthly membership under $150.",
+    "expected_output": "Punspace (Nimman): $120/month, 100Mbps, 24/7 access, free coffee. CAMP (Maya Mall): $90/month, 200Mbps, 24/7, standing desks. Hub53 (Nimman): $140/month, 150Mbps, pool access, events.",
+    "category": "coworking_search",
+    "tool_trace": "search_coworking(location='Chiang Mai',wifi_min_mbps=50,max_price_monthly=150) -> 3 results",
+    "difficulty": "easy"
+  },
+  {
+    "case_id": 31,
+    "input": "What power adapters do I need for UK, UAE, and South Africa?",
+    "expected_output": "UK: Type G (3 rectangular pins), 230V. UAE: Type G (same as UK), 230V. South Africa: Type M (3 round pins, large) or Type D (3 round pins, small), 230V. You need: Type G adapter for UK/UAE, Type M adapter for South Africa.",
+    "category": "adapter_check",
+    "tool_trace": "check_power_adapters(countries=['UK','UAE','South Africa']) -> adapter types and voltages",
+    "difficulty": "easy"
+  },
+  {
+    "case_id": 32,
+    "input": "Find a scuba diving certification course in Koh Tao, Thailand, 4 days, under $400.",
+    "expected_output": "Ban's Diving Resort: PADI Open Water, 4 days, $350 incl. accommodation. Crystal Dive: PADI Open Water, 4 days, $320, accommodation extra $50. Simple Life Divers: SSI Open Water, 4 days, $295, 4 nights dorm $40.",
+    "category": "activity_search",
+    "tool_trace": "search_course(location='Koh Tao',type='scuba',certification='open_water',max_price=400) -> 3 results",
+    "difficulty": "medium"
+  },
+  {
+    "case_id": 33,
+    "input": "Emergency: I lost my passport in Berlin. What do I do?",
+    "expected_output": "1. File a police report immediately at nearest station. 2. Contact your embassy/consulate: US citizens contact US Embassy Berlin (+49-30-8305-0). 3. Apply for emergency passport (same-day, $165). 4. Bring: police report, passport photo, ID, flight itinerary. 5. Emergency passport valid for 1 year.",
+    "category": "emergency",
+    "tool_trace": "get_emergency_info(location='Berlin',issue='lost_passport') -> step-by-step guide",
+    "difficulty": "hard"
+  },
+  {
+    "case_id": 34,
+    "input": "Plan a 3-day itinerary for Seoul mixing culture, food, and shopping.",
+    "expected_output": "Day 1 (Culture): Gyeongbokgung Palace (9-11), Insadong (11-2), Bukchon Hanok Village (2-5), Myeongdong Night Market (6-9). Day 2 (Food): Gwangjang Market breakfast, Korean cooking class (11-2), Hongdae street food tour (3-6), Korean BBQ dinner. Day 3 (Shopping): Myeongdong cosmetics (10-1), Gangnam boutiques (2-5), COEX Mall (5-8), Han River picnic.",
+    "category": "itinerary_planning",
+    "tool_trace": "plan_itinerary(location='Seoul',days=3,themes=['culture','food','shopping'])",
+    "difficulty": "hard"
+  },
+  {
+    "case_id": 35,
+    "input": "Find the best airport lounge access at Singapore Changi for a 6-hour layover.",
+    "expected_output": "Plaza Premium Lounge (T1): $35/3hrs, showers, food, WiFi. SATS Premier Lounge (T2): $40/3hrs, nap rooms, bar. Ambassador Transit Lounge (T3): $38/3hrs, pool, gym, showers. Priority Pass covers all three.",
+    "category": "lounge_search",
+    "tool_trace": "search_airport_lounge(airport='SIN',duration_hours=6) -> options with amenities",
+    "difficulty": "easy"
+  },
+  {
+    "case_id": 36,
+    "input": "Book a multi-city trip: NYC to London (3 days), London to Dubai (4 days), Dubai to NYC.",
+    "expected_output": "Flight 1: JFK-LHR, Aug 5, $389 (Norse). Hotel London: Premier Inn County Hall $120/night x3. Flight 2: LHR-DXB, Aug 8, $345 (Emirates). Hotel Dubai: Rove Downtown $85/night x4. Flight 3: DXB-JFK, Aug 12, $620 (Emirates). Total flights: $1,354. Total hotels: $700. Grand total: $2,054.",
+    "category": "multi_city_booking",
+    "tool_trace": "multi_city: search_flights for each leg, search_hotels for each city, calculate total",
+    "difficulty": "hard"
+  },
+  {
+    "case_id": 37,
+    "input": "What's the best way to get mobile data across 5 European countries in 2 weeks?",
+    "expected_output": "Orange Holiday Europe: 20GB, $49.90, 14 days, covers 30 countries. Holafly eSIM: unlimited data, $47, 15 days, 32 countries. Airalo Discover: 10GB, $37, 30 days, 38 countries. Best: Orange for physical SIM, Holafly for eSIM.",
+    "category": "sim_compare",
+    "tool_trace": "search_sim(destinations=['Europe'],data_gb=15,duration_days=14,multi_country=True) -> compare",
+    "difficulty": "medium"
+  },
+  {
+    "case_id": 38,
+    "input": "Find a sustainable/eco-friendly hotel in Costa Rica near a national park.",
+    "expected_output": "Lapa Rios Lodge (Osa Peninsula): $380/night, carbon neutral, wildlife conservation. Pacuare Lodge (Turrialba): $420/night, solar powered, river rafting access. Finca Rosa Blanca (Heredia): $250/night, organic coffee farm, near Poas Volcano.",
+    "category": "hotel_search",
+    "tool_trace": "search_hotel(location='Costa Rica',eco_certified=True,near_national_park=True) -> 3 results",
+    "difficulty": "medium"
+  },
+  {
+    "case_id": 39,
+    "input": "What are the COVID entry requirements for Japan as of August 2026?",
+    "expected_output": "Japan: No COVID test or vaccination proof required for entry (as of April 2026). Visit Japan Web registration recommended for faster immigration. Standard visa rules apply. Check MHLW website for latest updates before travel.",
+    "category": "health_check",
+    "tool_trace": "check_entry_requirements(destination='Japan',date='2026-08') -> current rules",
+    "difficulty": "easy"
+  }
+]

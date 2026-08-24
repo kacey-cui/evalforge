@@ -1,0 +1,195 @@
+{
+  "skill": "RAG Assistant v7 - Evidence grounding reaches 91%",
+  "created_at": "2026-08-17T10:01:52Z",
+  "n_cases": 80,
+  "n_passed": 71,
+  "pass_rate": 0.89,
+  "overall_score": 0.907,
+  "grade": "A",
+  "fields": {
+    "answer_quality": {
+      "field_score": 0.907,
+      "metrics": [
+        {
+          "name": "Answer Correctness",
+          "mean": 0.934,
+          "std": 0.12
+        },
+        {
+          "name": "Context Relevance",
+          "mean": 0.881,
+          "std": 0.12
+        },
+        {
+          "name": "Faithfulness",
+          "mean": 0.908,
+          "std": 0.12
+        },
+        {
+          "name": "Evidence Grounding",
+          "mean": 0.91,
+          "std": 0.12
+        },
+        {
+          "name": "Citation Accuracy",
+          "mean": 0.882,
+          "std": 0.12
+        },
+        {
+          "name": "Evidence Coverage",
+          "mean": 0.868,
+          "std": 0.12
+        }
+      ]
+    }
+  },
+  "cases": [],
+  "bad_cases": [
+    {
+      "case_id": 0,
+      "input": "Case 0",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 1,
+      "input": "Case 1",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 2,
+      "input": "Case 2",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 3,
+      "input": "Case 3",
+      "issue": "Score below threshold"
+    }
+  ],
+  "config": {
+    "model": {
+      "modelId": "gpt-4o",
+      "baseUrl": "https://api.openai.com/v1"
+    },
+    "metrics": [
+      {
+        "name": "accuracy",
+        "type": "score"
+      },
+      {
+        "name": "completeness",
+        "type": "score"
+      },
+      {
+        "name": "no_hallucination",
+        "type": "score"
+      },
+      {
+        "name": "json_schema",
+        "type": "gate"
+      }
+    ]
+  },
+  "summary_charts": [
+    {
+      "id": "metric_breakdown",
+      "type": "bar",
+      "title": "Metric Breakdown — 007",
+      "x_label": "Metric",
+      "y_label": "Score",
+      "y_min": 0,
+      "y_max": 1,
+      "series": [
+        {
+          "label": "Score",
+          "color": "#4f46e5",
+          "points": [
+            {
+              "x": "Correctness",
+              "y": 0.934
+            },
+            {
+              "x": "Relevance",
+              "y": 0.881
+            },
+            {
+              "x": "Faithfulness",
+              "y": 0.908
+            },
+            {
+              "x": "Grounding",
+              "y": 0.91
+            },
+            {
+              "x": "Citation",
+              "y": 0.882
+            },
+            {
+              "x": "Coverage",
+              "y": 0.868
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "summary_tables": [
+    {
+      "id": "bad_cases",
+      "title": "Failed Cases (9 total)",
+      "columns": [
+        "case_id",
+        "input",
+        "issue"
+      ],
+      "rows": [
+        {
+          "case_id": 0,
+          "input": "Case 0",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 1,
+          "input": "Case 1",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 2,
+          "input": "Case 2",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 3,
+          "input": "Case 3",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 4,
+          "input": "Case 4",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 5,
+          "input": "Case 5",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 6,
+          "input": "Case 6",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 7,
+          "input": "Case 7",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 8,
+          "input": "Case 8",
+          "issue": "Score below threshold"
+        }
+      ],
+      "paginate": true
+    }
+  ]
+}

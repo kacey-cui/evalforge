@@ -81,8 +81,8 @@ See the full 12-step workflow: [`examples/agent_workflow/run_workflow.py`](examp
 ### GUI (optional human client)
 
 ```bash
-bash serve.sh                    # Start platform on :8080
-# Open http://localhost:8080    # Browse metrics, compose on Canvas, export Skill
+bash serve.sh                    # Start platform on :9090
+# Open http://localhost:9090    # Browse metrics, compose on Canvas, export Skill
 ```
 
 The GUI is a visual composer that reads and writes the same JSON contracts. It is one client, not the primary interface.
@@ -324,7 +324,7 @@ Both operate on the same JSON contracts. No browser automation is required.
 ```
 evalplatform/
 ├── index.html                       # Web GUI (vanilla HTML/CSS/JS, 7 tabs)
-├── serve.sh                         # Starts :8080 static + :8081 git bridge
+├── serve.sh                         # Starts :9090 static + :9091 git bridge
 ├── METRIC_SCHEMA.md                 # Metric JSON contract
 ├── REPORT_SCHEMA.md                 # Report JSON contract
 ├── data/
@@ -364,7 +364,7 @@ evalplatform/
 
 - **API layer**: Python (standard library + `hashlib`, `json`, `argparse`)
 - **Web GUI**: Vanilla HTML/CSS/JS, HTML5 Drag & Drop, JSZip — zero framework, zero build step
-- **Backend bridge**: Flask (localhost-only git bridge on `:8081`)
+- **Backend bridge**: Flask (localhost-only git bridge on `:9091`)
 - **Storage**: Filesystem (content-addressable) + Git (audit trail)
 - **Evaluation engine**: [Deepeval](https://github.com/confident-ai/deepeval) (Python, runs locally — not bundled)
 - **Charts**: Inline SVG, no third-party chart libraries

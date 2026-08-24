@@ -1,0 +1,221 @@
+{
+  "skill": "Customer Support Agent v4 - Added few-shot examples, optimized system prompt",
+  "created_at": "2026-08-16T10:01:52Z",
+  "n_cases": 60,
+  "n_passed": 54,
+  "pass_rate": 0.9,
+  "overall_score": 0.924,
+  "grade": "A",
+  "fields": {
+    "support_quality": {
+      "field_score": 0.924,
+      "metrics": [
+        {
+          "name": "Correctness",
+          "mean": 0.94,
+          "std": 0.12
+        },
+        {
+          "name": "Relevance",
+          "mean": 0.95,
+          "std": 0.12
+        },
+        {
+          "name": "Hallucination Rate",
+          "mean": 0.91,
+          "std": 0.12
+        },
+        {
+          "name": "Response Quality",
+          "mean": 0.92,
+          "std": 0.12
+        },
+        {
+          "name": "Schema Validity",
+          "mean": 0.97,
+          "std": 0.12
+        }
+      ]
+    }
+  },
+  "cases": [],
+  "bad_cases": [
+    {
+      "case_id": 0,
+      "input": "Case 0",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 1,
+      "input": "Case 1",
+      "issue": "Score below threshold"
+    },
+    {
+      "case_id": 2,
+      "input": "Case 2",
+      "issue": "Score below threshold"
+    }
+  ],
+  "config": {
+    "model": {
+      "modelId": "gpt-4o",
+      "baseUrl": "https://api.openai.com/v1"
+    },
+    "metrics": [
+      {
+        "name": "accuracy",
+        "type": "score"
+      },
+      {
+        "name": "completeness",
+        "type": "score"
+      },
+      {
+        "name": "no_hallucination",
+        "type": "score"
+      },
+      {
+        "name": "json_schema",
+        "type": "gate"
+      }
+    ]
+  },
+  "summary_charts": [
+    {
+      "id": "metric_breakdown",
+      "type": "bar",
+      "title": "Metric Breakdown — 004",
+      "x_label": "Metric",
+      "y_label": "Score",
+      "y_min": 0,
+      "y_max": 1,
+      "series": [
+        {
+          "label": "Score",
+          "color": "#22c55e",
+          "points": [
+            {
+              "x": "Correctness",
+              "y": 0.94
+            },
+            {
+              "x": "Relevance",
+              "y": 0.95
+            },
+            {
+              "x": "Hallucination",
+              "y": 0.91
+            },
+            {
+              "x": "Quality",
+              "y": 0.92
+            },
+            {
+              "x": "Schema",
+              "y": 0.97
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hallucination_trend",
+      "type": "line",
+      "title": "Hallucination Rate — 注意 v3 回退!",
+      "x_label": "Run",
+      "y_label": "Score",
+      "y_min": 0.6,
+      "y_max": 1.0,
+      "series": [
+        {
+          "label": "Hallucination Rate",
+          "color": "#ef4444",
+          "points": [
+            {
+              "x": "v1",
+              "y": 0.71
+            },
+            {
+              "x": "v2",
+              "y": 0.78
+            },
+            {
+              "x": "v3 ⚠️",
+              "y": 0.74
+            },
+            {
+              "x": "v4 ✅",
+              "y": 0.91
+            }
+          ]
+        },
+        {
+          "label": "Correctness",
+          "color": "#4f46e5",
+          "points": [
+            {
+              "x": "v1",
+              "y": 0.82
+            },
+            {
+              "x": "v2",
+              "y": 0.86
+            },
+            {
+              "x": "v3",
+              "y": 0.9
+            },
+            {
+              "x": "v4",
+              "y": 0.94
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "summary_tables": [
+    {
+      "id": "bad_cases",
+      "title": "Failed Cases (6 total)",
+      "columns": [
+        "case_id",
+        "input",
+        "issue"
+      ],
+      "rows": [
+        {
+          "case_id": 0,
+          "input": "Case 0",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 1,
+          "input": "Case 1",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 2,
+          "input": "Case 2",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 3,
+          "input": "Case 3",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 4,
+          "input": "Case 4",
+          "issue": "Score below threshold"
+        },
+        {
+          "case_id": 5,
+          "input": "Case 5",
+          "issue": "Score below threshold"
+        }
+      ],
+      "paginate": true
+    }
+  ]
+}

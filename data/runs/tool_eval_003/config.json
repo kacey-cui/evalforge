@@ -1,0 +1,17 @@
+{
+  "model": {
+    "modelId": "gpt-4o",
+    "baseUrl": "https://api.openai.com/v1"
+  },
+  "judgeModel": {
+    "modelId": "gpt-4o",
+    "baseUrl": "https://api.openai.com/v1"
+  },
+  "fields": [
+    {
+      "name": "task_completion",
+      "gatePipeline": [],
+      "scorePipeline": []
+    }
+  ]
+}

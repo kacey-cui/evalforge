@@ -98,7 +98,7 @@
 | `dataset_versioning.py` | Same for datasets | `compute_content_hash`, `create_dataset`, `diff_versions` |
 | `mini_json_schema.py` | Lightweight JSON schema validator | `validate(data, schema)` → error list |
 | `publish_metric.py` | Share/discover metrics with dedup | `publish`, `discover`, `check` |
-| `git_bridge.py` | REST bridge for git-backed operations | Flask server on `:8081` |
+| `git_bridge.py` | REST bridge for git-backed operations | Flask server on `:9091` |
 
 ### 2. Agent Skills (`skills/`)
 

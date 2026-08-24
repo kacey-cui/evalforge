@@ -1,0 +1,84 @@
+{
+  "manifest_version": "1.0",
+  "run_id": "support_eval_002",
+  "created_at": "2026-08-08T10:01:52Z",
+  "triggered_by": "agent",
+  "dataset": {
+    "dataset_id": "customer_support_v1",
+    "version_hash": "1b85842c939a4a9e",
+    "content_hash": "1b85842c939a4a9e61c2678c2943a58748a260421984f1a5db6e1791f7137c86",
+    "n_cases": 60,
+    "source_path": "data/datasets/customer_support_v1/test_cases.json"
+  },
+  "metrics": [
+    {
+      "metric_id": "accuracy",
+      "version_hash": "106e657129ea85c2780ee5799223d3459a07994bca8619043e4a55732c193346",
+      "instance": {
+        "zone": "score",
+        "weight": 0.3
+      }
+    },
+    {
+      "metric_id": "completeness",
+      "version_hash": "127dbd2b16df68e58439a030beec58b15d301991ee547707b99bba2558b5e701",
+      "instance": {
+        "zone": "score",
+        "weight": 0.25
+      }
+    },
+    {
+      "metric_id": "no_hallucination",
+      "version_hash": "5f645e82b951669763a3ff55ba6127e57cc1766f6de30ed74670318bb98deae5",
+      "instance": {
+        "zone": "score",
+        "weight": 0.25
+      }
+    },
+    {
+      "metric_id": "json_schema",
+      "version_hash": "f5b6ed16c857ff3c0a69b616312d0c29695df7904b2f0536b4924b29446ef241",
+      "instance": {
+        "zone": "gate"
+      }
+    },
+    {
+      "metric_id": "keyword_hit",
+      "version_hash": "27804098ef59a31624601c32b3e4f341dd0025674321536ac38e2251a1d53e88",
+      "instance": {
+        "zone": "score",
+        "weight": 0.1
+      }
+    },
+    {
+      "metric_id": "sentence_count",
+      "version_hash": "28a27b56b5de6a57d8e005667623e92492cbbbcf76fab91eee07bed8741e793d",
+      "instance": {
+        "zone": "score",
+        "weight": 0.1
+      }
+    }
+  ],
+  "skill": {
+    "name": "Customer Support Agent v2 - Switched to GPT-4o, improved prompt",
+    "content_hash": "a975811fa4afd77af701387128a8d5b8ddeaf3fe5b0a3e91de39bef69e568fbb"
+  },
+  "model": {
+    "model_id": "gpt-4o",
+    "base_url": "https://api.openai.com/v1"
+  },
+  "judge_model": {
+    "model_id": "gpt-4o",
+    "base_url": "https://api.openai.com/v1"
+  },
+  "environment": {
+    "python_version": "3.12.0",
+    "platform": "macOS-14.0",
+    "dependencies": {
+      "deepeval": "1.2.0",
+      "openai": "1.0.0"
+    }
+  },
+  "extra": {},
+  "manifest_hash": "b22118ed6413fd187d99528a4f771c24c51e18d5bc22668025e51864b0332258"
+}
